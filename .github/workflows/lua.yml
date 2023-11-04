@@ -10,9 +10,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
-  steps:
-  - uses: actions/checkout@v4
-  - name: build
-    working-directory: ${{ github.workspace }}
-    shell: bash
-    run: make all
+    steps:
+    - uses: actions/checkout@v4
+    - name: build
+      working-directory: ${{ github.workspace }}
+      shell: bash
+      run: make all
