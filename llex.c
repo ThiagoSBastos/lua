@@ -164,7 +164,7 @@ static void inclinenumber (LexState *ls) {
 }
 
 
-void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source,
+void luaX_setinput (lua_State *L, LexState *ls, pZIO z, TString *source,
                     int firstchar) {
   ls->t.token = 0;
   ls->L = L;

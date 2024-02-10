@@ -32,7 +32,7 @@
 
 typedef struct {
   lua_State *L;
-  ZIO *Z;
+  pZIO Z;
   const char *name;
 } LoadState;
 
@@ -310,7 +310,7 @@ static void checkHeader (LoadState *S) {
 /*
 ** Load precompiled chunk.
 */
-LClosure *luaU_undump(lua_State *L, ZIO *Z, const char *name) {
+LClosure *luaU_undump(lua_State *L, pZIO Z, const char *name) {
   LoadState S;
   LClosure *cl;
   if (*name == '@' || *name == '=')

@@ -19,35 +19,45 @@
 #include "lstate.h"
 #include "lzio.h"
 
+pZIO createZIO(lua_State *L, lua_Reader reader, void *data) 
+{ 
+  return new lua::zio::Zio(L, reader, data); 
+}
 
-int luaZ_fill (ZIO *z) {
-  size_t size;
+void destroyZIO(pZIO z) { delete z; }
+
+namespace lua::zio 
+{
+
+Zio::Zio(lua_State *L, lua_Reader reader, void *data) 
+: L(L), 
+  reader(reader), 
+  data(data), 
+  n(0), 
+  p(nullptr) 
+{
+}
+
+}// namespace lua::zio
+
+int luaZ_fill(pZIO z)
+{
+  size_t size = 0;
   lua_State *L = z->L;
-  const char *buff;
+  const char *buff = nullptr;
   lua_unlock(L);
   buff = z->reader(L, z->data, &size);
   lua_lock(L);
-  if (buff == NULL || size == 0)
-    return EOZ;
-  z->n = size - 1;  /* discount char being returned */
+  if (buff == nullptr || size == 0) { return EOZ; }
+  z->n = size - 1; /* discount char being returned */
   z->p = buff;
-  return cast_uchar(*(z->p++));
+  return static_cast<unsigned char>(*(z->p++));
 }
-
-
-void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
-  z->L = L;
-  z->reader = reader;
-  z->data = data;
-  z->n = 0;
-  z->p = NULL;
-}
-
 
 /* --------------------------------------------------------------- read --- */
-size_t luaZ_read (ZIO *z, void *b, size_t n) {
-  while (n) {
-    size_t m;
+size_t luaZ_read (pZIO z, void *b, size_t n) {
+  while (n != 0U) {
+    size_t m = 0;
     if (z->n == 0) {  /* no bytes in buffer? */
       if (luaZ_fill(z) == EOZ)  /* try to read more */
         return n;  /* no more input; return number of missing bytes */
@@ -60,7 +70,7 @@ size_t luaZ_read (ZIO *z, void *b, size_t n) {
     memcpy(b, z->p, m);
     z->n -= m;
     z->p += m;
-    b = (char *)b + m;
+    b = reinterpret_cast<char*>(b) + m;
     n -= m;
   }
   return 0;
