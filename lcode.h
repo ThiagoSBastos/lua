@@ -7,6 +7,10 @@
 #ifndef lcode_h
 #define lcode_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "llex.h"
 #include "lobject.h"
 #include "lopcodes.h"
@@ -97,5 +101,9 @@ LUAI_FUNC void luaK_setlist (FuncState *fs, int base, int nelems, int tostore);
 LUAI_FUNC void luaK_finish (FuncState *fs);
 LUAI_FUNC l_noret luaK_semerror (LexState *ls, const char *msg);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

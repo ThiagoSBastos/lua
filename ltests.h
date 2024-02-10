@@ -7,6 +7,9 @@
 #ifndef ltests_h
 #define ltests_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,6 +149,8 @@ LUA_API void *debug_realloc (void *ud, void *block,
 #undef lua_strx2number
 #undef lua_number2strx
 
-
+#ifdef __cplusplus
+}
 #endif
 
+#endif

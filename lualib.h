@@ -8,6 +8,10 @@
 #ifndef lualib_h
 #define lualib_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lua.h"
 
 
@@ -48,5 +52,8 @@ LUAMOD_API int (luaopen_package) (lua_State *L);
 /* open all previous libraries */
 LUALIB_API void (luaL_openlibs) (lua_State *L);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -7,6 +7,10 @@
 #ifndef lopcodes_h
 #define lopcodes_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "llimits.h"
 
 
@@ -401,5 +405,9 @@ LUAI_DDEC(const lu_byte luaP_opmodes[NUM_OPCODES];)
 
 /* number of list items to accumulate before a SETLIST instruction */
 #define LFIELDS_PER_FLUSH	50
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

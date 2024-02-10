@@ -7,6 +7,10 @@
 #ifndef ltable_h
 #define ltable_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lobject.h"
 
 
@@ -59,5 +63,8 @@ LUAI_FUNC unsigned int luaH_realasize (const Table *t);
 LUAI_FUNC Node *luaH_mainposition (const Table *t, const TValue *key);
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -7,6 +7,9 @@
 #ifndef llimits_h
 #define llimits_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <limits.h>
 #include <stddef.h>
@@ -375,6 +378,10 @@ typedef l_uint32 Instruction;
 #else
 #define condchangemem(L,pre,pos)  \
 	{ if (gcrunning(G(L))) { pre; luaC_fullgc(L, 0); pos; } }
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

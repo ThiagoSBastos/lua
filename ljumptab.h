@@ -4,7 +4,6 @@
 ** See Copyright Notice in lua.h
 */
 
-
 #undef vmdispatch
 #undef vmcase
 #undef vmbreak

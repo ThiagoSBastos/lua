@@ -8,6 +8,10 @@
 #ifndef luaconf_h
 #define luaconf_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <limits.h>
 #include <stddef.h>
 
@@ -795,8 +799,8 @@
 */
 
 
-
-
-
+#ifdef __cplusplus
+}
 #endif
 
+#endif

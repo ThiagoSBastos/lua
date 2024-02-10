@@ -8,6 +8,9 @@
 #ifndef lobject_h
 #define lobject_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdarg.h>
 
@@ -808,6 +811,8 @@ LUAI_FUNC const char *luaO_pushvfstring (lua_State *L, const char *fmt,
 LUAI_FUNC const char *luaO_pushfstring (lua_State *L, const char *fmt, ...);
 LUAI_FUNC void luaO_chunkid (char *out, const char *source, size_t srclen);
 
-
+#ifdef __cplusplus
+}
 #endif
 
+#endif

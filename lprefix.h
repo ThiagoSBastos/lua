@@ -7,6 +7,9 @@
 #ifndef lprefix_h
 #define lprefix_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
 ** Allows POSIX/XSI stuff
@@ -41,5 +44,8 @@
 
 #endif			/* } */
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

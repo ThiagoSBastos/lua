@@ -7,8 +7,11 @@
 #ifndef lctype_h
 #define lctype_h
 
-#include "lua.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#include "lua.h"
 
 /*
 ** WARNING: the functions defined here do not necessarily correspond
@@ -97,5 +100,8 @@ LUAI_DDEC(const lu_byte luai_ctype_[UCHAR_MAX + 2];)
 
 #endif			/* } */
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

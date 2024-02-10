@@ -7,6 +7,9 @@
 #ifndef lmem_h
 #define lmem_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stddef.h>
 
@@ -89,5 +92,8 @@ LUAI_FUNC void *luaM_shrinkvector_ (lua_State *L, void *block, int *nelem,
                                     int final_n, int size_elem);
 LUAI_FUNC void *luaM_malloc_ (lua_State *L, size_t size, int tag);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

@@ -7,6 +7,10 @@
 #define lmathlib_c
 #define LUA_LIB
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lprefix.h"
 
 
@@ -779,3 +783,6 @@ LUAMOD_API int luaopen_math (lua_State *L) {
   return 1;
 }
 
+#ifdef __cplusplus
+}
+#endif

@@ -7,6 +7,9 @@
 #ifndef lapi_h
 #define lapi_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "llimits.h"
 #include "lstate.h"
@@ -48,5 +51,9 @@
 /* Map [-1, inf) (range of 'nresults') into (-inf, -2] */
 #define codeNresults(n)		(-(n) - 3)
 #define decodeNresults(n)	(-(n) - 3)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

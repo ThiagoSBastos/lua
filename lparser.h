@@ -7,6 +7,10 @@
 #ifndef lparser_h
 #define lparser_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "llimits.h"
 #include "lobject.h"
 #include "lzio.h"
@@ -167,5 +171,9 @@ LUAI_FUNC int luaY_nvarstack (FuncState *fs);
 LUAI_FUNC LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
                                  Dyndata *dyd, const char *name, int firstchar);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

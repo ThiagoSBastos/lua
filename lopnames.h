@@ -7,6 +7,10 @@
 #if !defined(lopnames_h)
 #define lopnames_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 
 
@@ -99,5 +103,8 @@ static const char *const opnames[] = {
   NULL
 };
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

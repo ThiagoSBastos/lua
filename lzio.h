@@ -4,6 +4,9 @@
 ** See Copyright Notice in lua.h
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef lzio_h
 #define lzio_h
@@ -63,4 +66,8 @@ struct Zio {
 
 LUAI_FUNC int luaZ_fill (ZIO *z);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
