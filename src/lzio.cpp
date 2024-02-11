@@ -19,13 +19,6 @@
 #include "lstate.h"
 #include "lzio.h"
 
-pZIO createZIO(lua_State *L, lua_Reader reader, void *data)
-{
-  return new lua::zio::Zio(L, reader, data);
-}
-
-void destroyZIO(pZIO z) { delete z; }
-
 namespace lua::zio
 {
 
@@ -36,40 +29,41 @@ Zio::Zio(lua_State *Lstate, lua_Reader lreader, void *additional_data)
 {
 }
 
-}// namespace lua::zio
-
-int luaZ_fill(pZIO z)
+int Zio::luaZ_fill()
 {
   size_t size = 0;
-  lua_State *L = z->L;
+  lua_State *Lcopy = this->L;
   const char *buff = nullptr;
-  lua_unlock(L);
-  buff = z->reader(L, z->data, &size);
-  lua_lock(L);
+  lua_unlock(Lcopy);
+  buff = this->reader(Lcopy, this->data, &size);
+  lua_lock(Lcopy);
   if (buff == nullptr || size == 0) { return EOZ; }
-  z->n = size - 1; /* discount char being returned */
-  z->p = buff;
-  return static_cast<unsigned char>(*(z->p++));
+  this->n = size - 1; /* discount char being returned */
+  this->p = buff;
+  return static_cast<unsigned char>(*(this->p++));
 }
 
 /* --------------------------------------------------------------- read --- */
-size_t luaZ_read (pZIO z, void *b, size_t n) {
-  while (n != 0U) {
+size_t Zio::luaZ_read (void *b, size_t input_n) {
+  while (input_n != 0U) {
     size_t m = 0;
-    if (z->n == 0) {  /* no bytes in buffer? */
-      if (luaZ_fill(z) == EOZ)  /* try to read more */
-        return n;  /* no more input; return number of missing bytes */
+    if (this->n == 0) {  /* no bytes in buffer? */
+      if (luaZ_fill() == EOZ)  /* try to read more */
+        return input_n;  /* no more input; return number of missing bytes */
       else {
-        z->n++;  /* luaZ_fill consumed first byte; put it back */
-        z->p--;
+        this->n++;  /* luaZ_fill consumed first byte; put it back */
+        this->p--;
       }
     }
-    m = (n <= z->n) ? n : z->n;  /* min. between n and z->n */
-    memcpy(b, z->p, m);
-    z->n -= m;
-    z->p += m;
+    m = (input_n <= this->n) ? input_n : this->n;  /* min. between n and z->n */
+    memcpy(b, this->p, m);
+    this->n -= m;
+    this->p += m;
     b = reinterpret_cast<char*>(b) + m;
-    n -= m;
+    input_n -= m;
   }
   return 0;
 }
+
+}// namespace lua::zio
+

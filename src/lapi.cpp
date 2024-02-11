@@ -29,7 +29,7 @@
 #include "ltm.h"
 #include "lundump.h"
 #include "lvm.h"
-
+#include "lzio.h"
 
 
 const char lua_ident[] =
@@ -1087,11 +1087,11 @@ LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
 LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
                       const char *chunkname, const char *mode) {
   lua_lock(L);
-  if (!chunkname) { 
-    chunkname = "?"; 
+  if (!chunkname) {
+    chunkname = "?";
   }
-  pZIO z = createZIO(L, reader, data); // TODO: remove once everything is converted to C++
-  int status = luaD_protectedparser(L, z, chunkname, mode);
+  auto z = lua::zio::Zio(L, reader, data);
+  int status = luaD_protectedparser(L, &z, chunkname, mode);
   if (status == LUA_OK) {  /* no errors? */
     LClosure *f = clLvalue(s2v(L->top.p - 1));  /* get new function */
     if (f->nupvalues >= 1) {  /* does it have an upvalue? */
@@ -1102,7 +1102,6 @@ LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
       luaC_barrier(L, f->upvals[0], gt);
     }
   }
-  destroyZIO(z); // TODO: remove once everything is converted to C++
   lua_unlock(L);
   return status;
 }

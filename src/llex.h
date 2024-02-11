@@ -73,7 +73,7 @@ typedef struct LexState {
   Token lookahead;  /* look ahead token */
   struct FuncState *fs;  /* current function (parser) */
   struct lua_State *L;
-  pZIO z;  /* input stream */
+  lua::zio::Zio* z;  /* input stream */
   Mbuffer *buff;  /* buffer for tokens */
   Table *h;  /* to avoid collection/reuse strings */
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
@@ -83,7 +83,7 @@ typedef struct LexState {
 
 
 LUAI_FUNC void luaX_init (lua_State *L);
-LUAI_FUNC void luaX_setinput (lua_State *L, LexState *ls, pZIO z,
+LUAI_FUNC void luaX_setinput (lua_State *L, LexState *ls, lua::zio::Zio* z,
                               TString *source, int firstchar);
 LUAI_FUNC TString *luaX_newstring (LexState *ls, const char *str, size_t l);
 LUAI_FUNC void luaX_next (LexState *ls);

@@ -29,7 +29,7 @@
 
 
 
-#define next(ls)	(ls->current = zgetc(ls->z))
+#define next(ls)	(ls->current = lua::zio::zgetc(ls->z))
 
 
 
@@ -164,7 +164,7 @@ static void inclinenumber (LexState *ls) {
 }
 
 
-void luaX_setinput (lua_State *L, LexState *ls, pZIO z, TString *source,
+void luaX_setinput (lua_State *L, LexState *ls, lua::zio::Zio* z, TString *source,
                     int firstchar) {
   ls->t.token = 0;
   ls->L = L;

@@ -255,7 +255,7 @@ struct CallInfo {
 /*
 ** 'global state', shared by all threads of this state
 */
-typedef struct global_State {
+struct global_State {
   lua_Alloc frealloc;  /* function to reallocate memory */
   void *ud;         /* auxiliary data to 'frealloc' */
   l_mem totalbytes;  /* number of bytes currently allocated - GCdebt */
@@ -304,7 +304,7 @@ typedef struct global_State {
   TString *strcache[STRCACHE_N][STRCACHE_M];  /* cache for strings in API */
   lua_WarnFunction warnf;  /* warning function */
   void *ud_warn;         /* auxiliary data to 'warnf' */
-} global_State;
+};
 
 
 /*

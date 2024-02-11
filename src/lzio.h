@@ -22,14 +22,19 @@ extern "C" {
 extern "C" {
 #endif
 
-#define EOZ	(-1)			/* end of stream */
+constexpr int EOZ = (-1);			/* end of stream */
 
 namespace lua::zio {
-struct Zio
+class Zio
 {
-// public:
+public:
   explicit Zio(lua_State *Lstate, lua_Reader lreader, void *additional_data);
+  size_t luaZ_read (void *b, size_t n);	/* read next n bytes */
+  int luaZ_fill(); // TODO: make it private
 
+  friend constexpr int zgetc(Zio* z);
+
+private:
   size_t n = 0; /* bytes still unread */
   const char *p = nullptr; /* current position in buffer */
   lua_Reader reader; /* reader function */
@@ -37,14 +42,17 @@ struct Zio
   lua_State *L = nullptr; /* Lua state (for reader) */
 };
 
+constexpr int zgetc(lua::zio::Zio* z) {
+    if (z->n-- > 0) {
+        return cast_uchar(*(z)->p++);
+    }
+    else {
+        return z->luaZ_fill();
+    }
+}
+
 }// namespace lua::zio
 
-
-using pZIO = lua::zio::Zio*; // handle
-pZIO createZIO(lua_State *L, lua_Reader reader, void *data);
-void destroyZIO(pZIO z);
-
-#define zgetc(z)  (((z)->n--)>0 ?  cast_uchar(*(z)->p++) : luaZ_fill(z))
 
 typedef struct Mbuffer {
   char *buffer;
@@ -52,7 +60,7 @@ typedef struct Mbuffer {
   size_t buffsize;
 } Mbuffer;
 
-#define luaZ_initbuffer(L, buff) ((buff)->buffer = NULL, (buff)->buffsize = 0)
+#define luaZ_initbuffer(L, buff) ((buff)->buffer = nullptr, (buff)->buffsize = 0)
 
 #define luaZ_buffer(buff)	((buff)->buffer)
 #define luaZ_sizebuffer(buff)	((buff)->buffsize)
@@ -68,10 +76,6 @@ typedef struct Mbuffer {
 	(buff)->buffsize = size)
 
 #define luaZ_freebuffer(L, buff)	luaZ_resizebuffer(L, buff, 0)
-
-LUAI_FUNC size_t luaZ_read (pZIO z, void *b, size_t n);	/* read next n bytes */
-
-LUAI_FUNC int luaZ_fill(pZIO z);
 
 #ifdef __cplusplus
 }

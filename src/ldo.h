@@ -64,7 +64,7 @@ extern "C" {
 typedef void (*Pfunc) (lua_State *L, void *ud);
 
 LUAI_FUNC void luaD_seterrorobj (lua_State *L, int errcode, StkId oldtop);
-LUAI_FUNC int luaD_protectedparser (lua_State *L, pZIO z, const char *name,
+LUAI_FUNC int luaD_protectedparser (lua_State *L, lua::zio::Zio* z, const char *name,
                                                   const char *mode);
 LUAI_FUNC void luaD_hook (lua_State *L, int event, int line,
                                         int fTransfer, int nTransfer);

@@ -32,7 +32,7 @@
 
 typedef struct {
   lua_State *L;
-  pZIO Z;
+  lua::zio::Zio* Z;
   const char *name;
 } LoadState;
 
@@ -50,7 +50,7 @@ static l_noret error (LoadState *S, const char *why) {
 #define loadVector(S,b,n)	loadBlock(S,b,(n)*sizeof((b)[0]))
 
 static void loadBlock (LoadState *S, void *b, size_t size) {
-  if (luaZ_read(S->Z, b, size) != 0)
+  if (S->Z->luaZ_read(b, size) != 0)
     error(S, "truncated chunk");
 }
 
@@ -59,7 +59,7 @@ static void loadBlock (LoadState *S, void *b, size_t size) {
 
 
 static lu_byte loadByte (LoadState *S) {
-  int b = zgetc(S->Z);
+  int b = lua::zio::zgetc(S->Z);
   if (b == EOZ)
     error(S, "truncated chunk");
   return cast_byte(b);
@@ -310,7 +310,7 @@ static void checkHeader (LoadState *S) {
 /*
 ** Load precompiled chunk.
 */
-LClosure *luaU_undump(lua_State *L, pZIO Z, const char *name) {
+LClosure *luaU_undump(lua_State *L, lua::zio::Zio* Z, const char *name) {
   LoadState S;
   LClosure *cl;
   if (*name == '@' || *name == '=')
