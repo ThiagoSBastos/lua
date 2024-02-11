@@ -7,6 +7,10 @@
 #define lvm_c
 #define LUA_CORE
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lprefix.h"
 
 #include <float.h>
@@ -30,6 +34,9 @@
 #include "ltm.h"
 #include "lvm.h"
 
+#ifdef __cplusplus
+}
+#endif
 
 /*
 ** By default, use jump tables in the main interpreter loop on gcc

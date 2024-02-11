@@ -18,28 +18,27 @@ extern "C" {
 }
 #endif
 
-
-/* --------- Private Part ------------------ */
-namespace lua::zio {
-class Zio
-{
-public:
-  explicit Zio(lua_State *L, lua_Reader reader, void *data);
-
-  size_t n; /* bytes still unread */
-  const char *p; /* current position in buffer */
-  lua_Reader reader; /* reader function */
-  void *data; /* additional data */
-  lua_State *L; /* Lua state (for reader) */
-};
-
-}// namespace lua::zio
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define EOZ	(-1)			/* end of stream */
+
+namespace lua::zio {
+struct Zio
+{
+// public:
+  explicit Zio(lua_State *Lstate, lua_Reader lreader, void *additional_data);
+
+  size_t n = 0; /* bytes still unread */
+  const char *p = nullptr; /* current position in buffer */
+  lua_Reader reader; /* reader function */
+  void *data = nullptr; /* additional data */
+  lua_State *L = nullptr; /* Lua state (for reader) */
+};
+
+}// namespace lua::zio
+
 
 using pZIO = lua::zio::Zio*; // handle
 pZIO createZIO(lua_State *L, lua_Reader reader, void *data);

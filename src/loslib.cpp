@@ -7,6 +7,10 @@
 #define loslib_c
 #define LUA_LIB
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lprefix.h"
 
 
@@ -425,4 +429,8 @@ LUAMOD_API int luaopen_os (lua_State *L) {
   luaL_newlib(L, syslib);
   return 1;
 }
+
+#ifdef __cplusplus
+}
+#endif
 

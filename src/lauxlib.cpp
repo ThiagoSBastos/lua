@@ -7,6 +7,10 @@
 #define lauxlib_c
 #define LUA_LIB
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lprefix.h"
 
 
@@ -1109,3 +1113,8 @@ LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
     luaL_error(L, "version mismatch: app. needs %f, Lua core provides %f",
                   (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)v);
 }
+
+#ifdef __cplusplus
+}
+#endif
+

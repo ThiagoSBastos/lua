@@ -3,11 +3,11 @@
 ** Compiling just this file generates a complete Lua stand-alone
 ** program:
 **
-** $ gcc -O2 -std=c99 -o lua onelua.c -lm
+** $ gcc -O2 -std=c99 -o lua onelua.cpp -lm
 **
 ** or
 **
-** $ gcc -O2 -std=c89 -DLUA_USE_C89 -o lua onelua.c -lm
+** $ gcc -O2 -std=c89 -DLUA_USE_C89 -o lua onelua.cpp -lm
 **
 */
 
@@ -71,51 +71,51 @@
 #define LUAI_DDEF	static
 
 /* core -- used by all */
-#include "lzio.c"
-#include "lctype.c"
-#include "lopcodes.c"
-#include "lmem.c"
-#include "lundump.c"
-#include "ldump.c"
-#include "lstate.c"
-#include "lgc.c"
-#include "llex.c"
-#include "lcode.c"
-#include "lparser.c"
-#include "ldebug.c"
-#include "lfunc.c"
-#include "lobject.c"
-#include "ltm.c"
-#include "lstring.c"
-#include "ltable.c"
-#include "ldo.c"
-#include "lvm.c"
-#include "lapi.c"
+#include "lzio.cpp"
+#include "lctype.cpp"
+#include "lopcodes.cpp"
+#include "lmem.cpp"
+#include "lundump.cpp"
+#include "ldump.cpp"
+#include "lstate.cpp"
+#include "lgc.cpp"
+#include "llex.cpp"
+#include "lcode.cpp"
+#include "lparser.cpp"
+#include "ldebug.cpp"
+#include "lfunc.cpp"
+#include "lobject.cpp"
+#include "ltm.cpp"
+#include "lstring.cpp"
+#include "ltable.cpp"
+#include "ldo.cpp"
+#include "lvm.cpp"
+#include "lapi.cpp"
 
 /* auxiliary library -- used by all */
-#include "lauxlib.c"
+#include "lauxlib.cpp"
 
 /* standard library  -- not used by luac */
 #ifndef MAKE_LUAC
-#include "lbaselib.c"
-#include "lcorolib.c"
-#include "ldblib.c"
-#include "liolib.c"
-#include "lmathlib.c"
-#include "loadlib.c"
-#include "loslib.c"
-#include "lstrlib.c"
-#include "ltablib.c"
-#include "lutf8lib.c"
-#include "linit.c"
+#include "lbaselib.cpp"
+#include "lcorolib.cpp"
+#include "ldblib.cpp"
+#include "liolib.cpp"
+#include "lmathlib.cpp"
+#include "loadlib.cpp"
+#include "loslib.cpp"
+#include "lstrlib.cpp"
+#include "ltablib.cpp"
+#include "lutf8lib.cpp"
+#include "linit.cpp"
 #endif
 
 /* lua */
 #ifdef MAKE_LUA
-#include "lua.c"
+#include "lua.cpp"
 #endif
 
 /* luac */
 #ifdef MAKE_LUAC
-#include "luac.c"
+#include "luac.cpp"
 #endif

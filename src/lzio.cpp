@@ -19,22 +19,20 @@
 #include "lstate.h"
 #include "lzio.h"
 
-pZIO createZIO(lua_State *L, lua_Reader reader, void *data) 
-{ 
-  return new lua::zio::Zio(L, reader, data); 
+pZIO createZIO(lua_State *L, lua_Reader reader, void *data)
+{
+  return new lua::zio::Zio(L, reader, data);
 }
 
 void destroyZIO(pZIO z) { delete z; }
 
-namespace lua::zio 
+namespace lua::zio
 {
 
-Zio::Zio(lua_State *L, lua_Reader reader, void *data) 
-: L(L), 
-  reader(reader), 
-  data(data), 
-  n(0), 
-  p(nullptr) 
+Zio::Zio(lua_State *Lstate, lua_Reader lreader, void *additional_data)
+: reader(lreader),
+  data(additional_data),
+  L(Lstate)
 {
 }
 

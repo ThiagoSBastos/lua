@@ -7,6 +7,10 @@
 #define lutf8lib_c
 #define LUA_LIB
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lprefix.h"
 
 
@@ -288,4 +292,8 @@ LUAMOD_API int luaopen_utf8 (lua_State *L) {
   lua_setfield(L, -2, "charpattern");
   return 1;
 }
+
+#ifdef __cplusplus
+}
+#endif
 

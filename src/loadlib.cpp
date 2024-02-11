@@ -11,6 +11,10 @@
 #define loadlib_c
 #define LUA_LIB
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lprefix.h"
 
 
@@ -755,4 +759,8 @@ LUAMOD_API int luaopen_package (lua_State *L) {
   lua_pop(L, 1);  /* pop global table */
   return 1;  /* return 'package' table */
 }
+
+#ifdef __cplusplus
+}
+#endif
 

@@ -1,7 +1,13 @@
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include "lua.h"
 #include "lauxlib.h"
 
 static int id (lua_State *L) {
+  lua_pushboolean(L, 1);
+  lua_insert(L, 1);
   return lua_gettop(L);
 }
 
@@ -20,4 +26,7 @@ LUAMOD_API int luaopen_lib2 (lua_State *L) {
   return 1;
 }
 
+#ifdef __cplusplus
+}
+#endif
 
