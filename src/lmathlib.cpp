@@ -7,28 +7,21 @@
 #define lmathlib_c
 #define LUA_LIB
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <climits>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
 
-#include "lprefix.h"
-
-
-#include <float.h>
-#include <limits.h>
-#include <math.h>
-#include <stdlib.h>
-#include <time.h>
+#include <array>
+#include <limits>
+#include <numbers>
 
 #include "lua.h"
 
 #include "lauxlib.h"
 #include "lualib.h"
 
-
-#undef PI
-#define PI	(l_mathop(3.141592653589793238462643383279502884))
-
+namespace lua::math {
 
 static int math_abs (lua_State *L) {
   if (lua_isinteger(L, 1)) {
@@ -37,32 +30,32 @@ static int math_abs (lua_State *L) {
     lua_pushinteger(L, n);
   }
   else
-    lua_pushnumber(L, l_mathop(fabs)(luaL_checknumber(L, 1)));
+    lua_pushnumber(L, l_mathop(std::fabs)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 static int math_sin (lua_State *L) {
-  lua_pushnumber(L, l_mathop(sin)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::sin)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 static int math_cos (lua_State *L) {
-  lua_pushnumber(L, l_mathop(cos)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::cos)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 static int math_tan (lua_State *L) {
-  lua_pushnumber(L, l_mathop(tan)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::tan)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 static int math_asin (lua_State *L) {
-  lua_pushnumber(L, l_mathop(asin)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::asin)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 static int math_acos (lua_State *L) {
-  lua_pushnumber(L, l_mathop(acos)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::acos)(luaL_checknumber(L, 1)));
   return 1;
 }
 
@@ -77,8 +70,9 @@ static int math_atan (lua_State *L) {
 static int math_toint (lua_State *L) {
   int valid;
   lua_Integer n = lua_tointegerx(L, 1, &valid);
-  if (l_likely(valid))
+  if (valid) [[likely]] {
     lua_pushinteger(L, n);
+  }
   else {
     luaL_checkany(L, 1);
     luaL_pushfail(L);  /* value is not convertible to integer */
@@ -158,7 +152,7 @@ static int math_modf (lua_State *L) {
 
 
 static int math_sqrt (lua_State *L) {
-  lua_pushnumber(L, l_mathop(sqrt)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::sqrt)(luaL_checknumber(L, 1)));
   return 1;
 }
 
@@ -197,12 +191,12 @@ static int math_exp (lua_State *L) {
 }
 
 static int math_deg (lua_State *L) {
-  lua_pushnumber(L, luaL_checknumber(L, 1) * (l_mathop(180.0) / PI));
+  lua_pushnumber(L, luaL_checknumber(L, 1) * (l_mathop(180.0) / std::numbers::pi));
   return 1;
 }
 
 static int math_rad (lua_State *L) {
-  lua_pushnumber(L, luaL_checknumber(L, 1) * (PI / l_mathop(180.0)));
+  lua_pushnumber(L, luaL_checknumber(L, 1) * (std::numbers::pi / l_mathop(180.0)));
   return 1;
 }
 
@@ -263,13 +257,15 @@ static int math_type (lua_State *L) {
 
 
 /* number of binary digits in the mantissa of a float */
-#define FIGS	l_floatatt(MANT_DIG)
-
-#if FIGS > 64
-/* there are only 64 random bits; use them all */
-#undef FIGS
-#define FIGS	64
-#endif
+constexpr unsigned int FIGS = []() constexpr {
+    constexpr auto mantissa = std::numeric_limits<LUA_NUMBER>::digits;
+    if constexpr (mantissa > 64) {
+        /* there are only 64 random bits; use them all */
+        return 64U;
+    } else {
+        return mantissa;
+    }
+}();
 
 
 /*
@@ -313,15 +309,14 @@ static int math_type (lua_State *L) {
 */
 
 /* avoid using extra bits when needed */
-#define trim64(x)	((x) & 0xffffffffffffffffu)
-
+constexpr Rand64 trim64(Rand64 x) { return ((x) & 0xffffffffffffffffu); }
 
 /* rotate left 'x' by 'n' bits */
-static Rand64 rotl (Rand64 x, int n) {
+static constexpr Rand64 rotl (Rand64 x, int n) {
   return (x << n) | (trim64(x) >> (64 - n));
 }
 
-static Rand64 nextrand (Rand64 *state) {
+static constexpr Rand64 nextrand (Rand64 *state) {
   Rand64 state0 = state[0];
   Rand64 state1 = state[1];
   Rand64 state2 = state[2] ^ state0;
@@ -347,44 +342,45 @@ static Rand64 nextrand (Rand64 *state) {
 */
 
 /* must throw out the extra (64 - FIGS) bits */
-#define shift64_FIG	(64 - FIGS)
+constexpr unsigned int shift64_FIG = (64 - FIGS);
 
 /* 2^(-FIGS) == 2^-1 / 2^(FIGS-1) */
-#define scaleFIG	(l_mathop(0.5) / ((Rand64)1 << (FIGS - 1)))
+constexpr lua_Number scaleFIG = (l_mathop(0.5) / ((Rand64)1 << (FIGS - 1)));
 
 static lua_Number I2d (Rand64 x) {
   SRand64 sx = (SRand64)(trim64(x) >> shift64_FIG);
   lua_Number res = (lua_Number)(sx) * scaleFIG;
-  if (sx < 0)
+  if (sx < 0) {
     res += 1.0;  /* correct the two's complement if negative */
+  }
   lua_assert(0 <= res && res < 1);
   return res;
 }
 
 /* convert a 'Rand64' to a 'lua_Unsigned' */
-#define I2UInt(x)	((lua_Unsigned)trim64(x))
+constexpr auto I2UInt(Rand64 x) { return static_cast<lua_Unsigned>(trim64(x)); }
 
 /* convert a 'lua_Unsigned' to a 'Rand64' */
-#define Int2I(x)	((Rand64)(x))
+constexpr auto Int2I(lua_Unsigned x) { return static_cast<Rand64>(x); }
 
 
 #else	/* no 'Rand64'   }{ */
 
 /* get an integer with at least 32 bits */
 #if LUAI_IS32INT
-typedef unsigned int lu_int32;
+using lu_int32 = unsigned int;
 #else
-typedef unsigned long lu_int32;
+using lu_int32 = unsigned long;
 #endif
 
 
 /*
 ** Use two 32-bit integers to represent a 64-bit quantity.
 */
-typedef struct Rand64 {
+struct Rand64 {
   lu_int32 h;  /* higher half */
   lu_int32 l;  /* lower half */
-} Rand64;
+};
 
 
 /*
@@ -394,7 +390,7 @@ typedef struct Rand64 {
 */
 
 /* avoid using extra bits when needed */
-#define trim32(x)	((x) & 0xffffffffu)
+constexpr lu_int32 trim32(lu_int32 x) { return ((x) & 0xffffffffu); }
 
 
 /*
@@ -475,13 +471,12 @@ static Rand64 nextrand (Rand64 *state) {
 */
 
 /* an unsigned 1 with proper type */
-#define UONE		((lu_int32)1)
+constexpr auto UONE = static_cast<lu_int32>(1);
 
-
-#if FIGS <= 32
+if constexpr (FIGS <= 32) {
 
 /* 2^(-FIGS) */
-#define scaleFIG       (l_mathop(0.5) / (UONE << (FIGS - 1)))
+constexpr unsigned int scaleFIG = (l_mathop(0.5) / (UONE << (FIGS - 1)));
 
 /*
 ** get up to 32 bits from higher half, shifting right to
@@ -492,22 +487,21 @@ static lua_Number I2d (Rand64 x) {
   return h * scaleFIG;
 }
 
-#else	/* 32 < FIGS <= 64 */
+else { /* 32 < FIGS <= 64 */
 
 /* 2^(-FIGS) = 1.0 / 2^30 / 2^3 / 2^(FIGS-33) */
-#define scaleFIG  \
-    (l_mathop(1.0) / (UONE << 30) / l_mathop(8.0) / (UONE << (FIGS - 33)))
+constexpr unsigned int scaleFIG = (l_mathop(1.0) / (UONE << 30) / l_mathop(8.0) / (UONE << (FIGS - 33)));
 
 /*
 ** use FIGS - 32 bits from lower half, throwing out the other
 ** (32 - (FIGS - 32)) = (64 - FIGS) bits
 */
-#define shiftLOW	(64 - FIGS)
+constexpr unsigned int shiftLOW = (64 - FIGS);
 
 /*
 ** higher 32 bits go after those (FIGS - 32) bits: shiftHI = 2^(FIGS - 32)
 */
-#define shiftHI		((lua_Number)(UONE << (FIGS - 33)) * l_mathop(2.0))
+constexpr unsigned int shiftHI = ((lua_Number)(UONE << (FIGS - 33)) * l_mathop(2.0));
 
 
 static lua_Number I2d (Rand64 x) {
@@ -516,8 +510,7 @@ static lua_Number I2d (Rand64 x) {
   return (h + l) * scaleFIG;
 }
 
-#endif
-
+}
 
 /* convert a 'Rand64' to a 'lua_Unsigned' */
 static lua_Unsigned I2UInt (Rand64 x) {
@@ -535,9 +528,9 @@ static Rand64 Int2I (lua_Unsigned n) {
 /*
 ** A state uses four 'Rand64' values.
 */
-typedef struct {
-  Rand64 s[4];
-} RanState;
+struct RanState {
+    std::array<Rand64, 4> s;
+};
 
 
 /*
@@ -552,8 +545,9 @@ typedef struct {
 */
 static lua_Unsigned project (lua_Unsigned ran, lua_Unsigned n,
                              RanState *state) {
-  if ((n & (n + 1)) == 0)  /* is 'n + 1' a power of 2? */
+  if ((n & (n + 1)) == 0) { /* is 'n + 1' a power of 2? */
     return ran & n;  /* no bias */
+  }
   else {
     lua_Unsigned lim = n;
     /* compute the smallest (2^b - 1) not smaller than 'n' */
@@ -568,8 +562,9 @@ static lua_Unsigned project (lua_Unsigned ran, lua_Unsigned n,
     lua_assert((lim & (lim + 1)) == 0  /* 'lim + 1' is a power of 2, */
       && lim >= n  /* not smaller than 'n', */
       && (lim >> 1) < n);  /* and it is the smallest one */
-    while ((ran &= lim) > n)  /* project 'ran' into [0..lim] */
-      ran = I2UInt(nextrand(state->s));  /* not inside [0..n]? try again */
+    while ((ran &= lim) > n) { /* project 'ran' into [0..lim] */
+      ran = I2UInt(nextrand(state->s.data()));  /* not inside [0..n]? try again */
+    }
     return ran;
   }
 }
@@ -579,7 +574,7 @@ static int math_random (lua_State *L) {
   lua_Integer low, up;
   lua_Unsigned p;
   RanState *state = (RanState *)lua_touserdata(L, lua_upvalueindex(1));
-  Rand64 rv = nextrand(state->s);  /* next pseudo-random value */
+  Rand64 rv = nextrand(state->s.data());  /* next pseudo-random value */
   switch (lua_gettop(L)) {  /* check number of arguments */
     case 0: {  /* no arguments */
       lua_pushnumber(L, I2d(rv));  /* float between 0 and 1 */
@@ -630,9 +625,9 @@ static void setseed (lua_State *L, Rand64 *state,
 ** randomization).
 */
 static void randseed (lua_State *L, RanState *state) {
-  lua_Unsigned seed1 = (lua_Unsigned)time(NULL);
+  lua_Unsigned seed1 = (lua_Unsigned)time(nullptr);
   lua_Unsigned seed2 = (lua_Unsigned)(size_t)L;
-  setseed(L, state->s, seed1, seed2);
+  setseed(L, state->s.data(), seed1, seed2);
 }
 
 
@@ -644,16 +639,16 @@ static int math_randomseed (lua_State *L) {
   else {
     lua_Integer n1 = luaL_checkinteger(L, 1);
     lua_Integer n2 = luaL_optinteger(L, 2, 0);
-    setseed(L, state->s, n1, n2);
+    setseed(L, state->s.data(), n1, n2);
   }
   return 2;  /* return seeds */
 }
 
 
-static const luaL_Reg randfuncs[] = {
+static constexpr luaL_Reg randfuncs[] = {
   {"random", math_random},
   {"randomseed", math_randomseed},
-  {NULL, NULL}
+  {nullptr, nullptr}
 };
 
 
@@ -678,24 +673,24 @@ static void setrandfunc (lua_State *L) {
 #if defined(LUA_COMPAT_MATHLIB)
 
 static int math_cosh (lua_State *L) {
-  lua_pushnumber(L, l_mathop(cosh)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::cosh)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 static int math_sinh (lua_State *L) {
-  lua_pushnumber(L, l_mathop(sinh)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::sinh)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 static int math_tanh (lua_State *L) {
-  lua_pushnumber(L, l_mathop(tanh)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::tanh)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 static int math_pow (lua_State *L) {
   lua_Number x = luaL_checknumber(L, 1);
   lua_Number y = luaL_checknumber(L, 2);
-  lua_pushnumber(L, l_mathop(pow)(x, y));
+  lua_pushnumber(L, l_mathop(std::pow)(x, y));
   return 1;
 }
 
@@ -714,16 +709,14 @@ static int math_ldexp (lua_State *L) {
 }
 
 static int math_log10 (lua_State *L) {
-  lua_pushnumber(L, l_mathop(log10)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::log10)(luaL_checknumber(L, 1)));
   return 1;
 }
 
 #endif
 /* }================================================================== */
 
-
-
-static const luaL_Reg mathlib[] = {
+static constexpr luaL_Reg mathlib[] = {
   {"abs",   math_abs},
   {"acos",  math_acos},
   {"asin",  math_asin},
@@ -756,22 +749,23 @@ static const luaL_Reg mathlib[] = {
   {"log10", math_log10},
 #endif
   /* placeholders */
-  {"random", NULL},
-  {"randomseed", NULL},
-  {"pi", NULL},
-  {"huge", NULL},
-  {"maxinteger", NULL},
-  {"mininteger", NULL},
-  {NULL, NULL}
+  {"random", nullptr},
+  {"randomseed", nullptr},
+  {"pi", nullptr},
+  {"huge", nullptr},
+  {"maxinteger", nullptr},
+  {"mininteger", nullptr},
+  {nullptr, nullptr}
 };
 
+} // namespace lua::math
 
 /*
 ** Open math library
 */
 LUAMOD_API int luaopen_math (lua_State *L) {
-  luaL_newlib(L, mathlib);
-  lua_pushnumber(L, PI);
+  luaL_newlib(L, lua::math::mathlib);
+  lua_pushnumber(L, std::numbers::pi);
   lua_setfield(L, -2, "pi");
   lua_pushnumber(L, (lua_Number)HUGE_VAL);
   lua_setfield(L, -2, "huge");
@@ -779,10 +773,6 @@ LUAMOD_API int luaopen_math (lua_State *L) {
   lua_setfield(L, -2, "maxinteger");
   lua_pushinteger(L, LUA_MININTEGER);
   lua_setfield(L, -2, "mininteger");
-  setrandfunc(L);
+  lua::math::setrandfunc(L);
   return 1;
 }
-
-#ifdef __cplusplus
-}
-#endif
