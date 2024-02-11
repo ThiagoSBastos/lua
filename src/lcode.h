@@ -21,13 +21,13 @@ extern "C" {
 ** Marks the end of a patch list. It is an invalid value both as an absolute
 ** address, and as a list link (would link an element to itself).
 */
-#define NO_JUMP (-1)
+constexpr int NO_JUMP = (-1);
 
 
 /*
 ** grep "ORDER OPR" if you change these enums  (ORDER OP)
 */
-typedef enum BinOpr {
+enum BinOpr {
   /* arithmetic operators */
   OPR_ADD, OPR_SUB, OPR_MUL, OPR_MOD, OPR_POW,
   OPR_DIV, OPR_IDIV,
@@ -42,7 +42,7 @@ typedef enum BinOpr {
   /* logical operators */
   OPR_AND, OPR_OR,
   OPR_NOBINOPR
-} BinOpr;
+};
 
 
 /* true if operation is foldable (that is, it is arithmetic or bitwise) */
@@ -52,7 +52,7 @@ typedef enum BinOpr {
 #define luaK_codeABC(fs,o,a,b,c)	luaK_codeABCk(fs,o,a,b,c,0)
 
 
-typedef enum UnOpr { OPR_MINUS, OPR_BNOT, OPR_NOT, OPR_LEN, OPR_NOUNOPR } UnOpr;
+enum UnOpr { OPR_MINUS, OPR_BNOT, OPR_NOT, OPR_LEN, OPR_NOUNOPR };
 
 
 /* get (pointer to) instruction of given 'expdesc' */

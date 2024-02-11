@@ -11,12 +11,9 @@
 extern "C" {
 #endif
 
-#include <stddef.h>
-
-
 /* ORDER OP */
 
-static const char *const opnames[] = {
+static constexpr const char *const opnames[] = {
   "MOVE",
   "LOADI",
   "LOADF",
@@ -100,7 +97,7 @@ static const char *const opnames[] = {
   "VARARG",
   "VARARGPREP",
   "EXTRAARG",
-  NULL
+  nullptr
 };
 
 #ifdef __cplusplus

@@ -10,10 +10,10 @@
 #include "lprefix.h"
 
 
-#include <float.h>
-#include <limits.h>
-#include <math.h>
-#include <stdlib.h>
+#include <cfloat>
+#include <climits>
+#include <cmath>
+#include <cstdlib>
 
 #include "lua.h"
 
@@ -1357,8 +1357,8 @@ static int constfolding (FuncState *fs, int op, expdesc *e1,
 */
 l_sinline OpCode binopr2op (BinOpr opr, BinOpr baser, OpCode base) {
   lua_assert(baser <= opr &&
-            ((baser == OPR_ADD && opr <= OPR_SHR) ||
-             (baser == OPR_LT && opr <= OPR_LE)));
+            ((baser == BinOpr::OPR_ADD && opr <= BinOpr::OPR_SHR) ||
+             (baser == BinOpr::OPR_LT && opr <= BinOpr::OPR_LE)));
   return cast(OpCode, (cast_int(opr) - cast_int(baser)) + cast_int(base));
 }
 
@@ -1367,7 +1367,7 @@ l_sinline OpCode binopr2op (BinOpr opr, BinOpr baser, OpCode base) {
 ** Convert a UnOpr to an OpCode  (ORDER OPR - ORDER OP)
 */
 l_sinline OpCode unopr2op (UnOpr opr) {
-  return cast(OpCode, (cast_int(opr) - cast_int(OPR_MINUS)) +
+  return cast(OpCode, (cast_int(opr) - cast_int(UnOpr::OPR_MINUS)) +
                                        cast_int(OP_UNM));
 }
 
@@ -1376,8 +1376,8 @@ l_sinline OpCode unopr2op (UnOpr opr) {
 ** Convert a BinOpr to a tag method  (ORDER OPR - ORDER TM)
 */
 l_sinline TMS binopr2TM (BinOpr opr) {
-  lua_assert(OPR_ADD <= opr && opr <= OPR_SHR);
-  return cast(TMS, (cast_int(opr) - cast_int(OPR_ADD)) + cast_int(TM_ADD));
+  lua_assert(BinOpr::OPR_ADD <= opr && opr <= BinOpr::OPR_SHR);
+  return cast(TMS, (cast_int(opr) - cast_int(BinOpr::OPR_ADD)) + cast_int(TM_ADD));
 }
 
 
@@ -1421,7 +1421,7 @@ static void finishbinexpval (FuncState *fs, expdesc *e1, expdesc *e2,
 */
 static void codebinexpval (FuncState *fs, BinOpr opr,
                            expdesc *e1, expdesc *e2, int line) {
-  OpCode op = binopr2op(opr, OPR_ADD, OP_ADD);
+  OpCode op = binopr2op(opr, BinOpr::OPR_ADD, OP_ADD);
   int v2 = luaK_exp2anyreg(fs, e2);  /* make sure 'e2' is in a register */
   /* 'e1' must be already in a register or it is a constant */
   lua_assert((VNIL <= e1->k && e1->k <= VKSTR) ||
@@ -1450,7 +1450,7 @@ static void codebinK (FuncState *fs, BinOpr opr,
                       expdesc *e1, expdesc *e2, int flip, int line) {
   TMS event = binopr2TM(opr);
   int v2 = e2->u.info;  /* K index */
-  OpCode op = binopr2op(opr, OPR_ADD, OP_ADDK);
+  OpCode op = binopr2op(opr, BinOpr::OPR_ADD, OP_ADDK);
   finishbinexpval(fs, e1, e2, op, v2, flip, line, OP_MMBINK, event);
 }
 
@@ -1499,7 +1499,7 @@ static void codebinNoK (FuncState *fs, BinOpr opr,
 */
 static void codearith (FuncState *fs, BinOpr opr,
                        expdesc *e1, expdesc *e2, int flip, int line) {
-  if (tonumeral(e2, NULL) && luaK_exp2K(fs, e2))  /* K operand? */
+  if (tonumeral(e2, nullptr) && luaK_exp2K(fs, e2))  /* K operand? */
     codebinK(fs, opr, e1, e2, flip, line);
   else  /* 'e2' is neither an immediate nor a K operand */
     codebinNoK(fs, opr, e1, e2, flip, line);
@@ -1514,11 +1514,11 @@ static void codearith (FuncState *fs, BinOpr opr,
 static void codecommutative (FuncState *fs, BinOpr op,
                              expdesc *e1, expdesc *e2, int line) {
   int flip = 0;
-  if (tonumeral(e1, NULL)) {  /* is first operand a numeric constant? */
+  if (tonumeral(e1, nullptr)) {  /* is first operand a numeric constant? */
     swapexps(e1, e2);  /* change order */
     flip = 1;
   }
-  if (op == OPR_ADD && isSCint(e2))  /* immediate operand? */
+  if (op == BinOpr::OPR_ADD && isSCint(e2))  /* immediate operand? */
     codebini(fs, OP_ADDI, e1, e2, flip, line, TM_ADD);
   else
     codearith(fs, op, e1, e2, flip, line);
@@ -1556,18 +1556,18 @@ static void codeorder (FuncState *fs, BinOpr opr, expdesc *e1, expdesc *e2) {
     /* use immediate operand */
     r1 = luaK_exp2anyreg(fs, e1);
     r2 = im;
-    op = binopr2op(opr, OPR_LT, OP_LTI);
+    op = binopr2op(opr, BinOpr::OPR_LT, OP_LTI);
   }
   else if (isSCnumber(e1, &im, &isfloat)) {
     /* transform (A < B) to (B > A) and (A <= B) to (B >= A) */
     r1 = luaK_exp2anyreg(fs, e2);
     r2 = im;
-    op = binopr2op(opr, OPR_LT, OP_GTI);
+    op = binopr2op(opr, BinOpr::OPR_LT, OP_GTI);
   }
   else {  /* regular case, compare two registers */
     r1 = luaK_exp2anyreg(fs, e1);
     r2 = luaK_exp2anyreg(fs, e2);
-    op = binopr2op(opr, OPR_LT, OP_LT);
+    op = binopr2op(opr, BinOpr::OPR_LT, OP_LT);
   }
   freeexps(fs, e1, e2);
   e1->u.info = condjump(fs, op, r1, r2, isfloat, 1);
@@ -1602,7 +1602,7 @@ static void codeeq (FuncState *fs, BinOpr opr, expdesc *e1, expdesc *e2) {
     r2 = luaK_exp2anyreg(fs, e2);
   }
   freeexps(fs, e1, e2);
-  e1->u.info = condjump(fs, op, r1, r2, isfloat, (opr == OPR_EQ));
+  e1->u.info = condjump(fs, op, r1, r2, isfloat, (opr == BinOpr::OPR_EQ));
   e1->k = VJMP;
 }
 
@@ -1614,14 +1614,14 @@ void luaK_prefix (FuncState *fs, UnOpr opr, expdesc *e, int line) {
   static const expdesc ef = {VKINT, {0}, NO_JUMP, NO_JUMP};
   luaK_dischargevars(fs, e);
   switch (opr) {
-    case OPR_MINUS: case OPR_BNOT:  /* use 'ef' as fake 2nd operand */
+    case UnOpr::OPR_MINUS: case UnOpr::OPR_BNOT:  /* use 'ef' as fake 2nd operand */
       if (constfolding(fs, opr + LUA_OPUNM, e, &ef))
         break;
       /* else */ /* FALLTHROUGH */
-    case OPR_LEN:
+    case UnOpr::OPR_LEN:
       codeunexpval(fs, unopr2op(opr), e, line);
       break;
-    case OPR_NOT: codenot(fs, e); break;
+    case UnOpr::OPR_NOT: codenot(fs, e); break;
     default: lua_assert(0);
   }
 }
@@ -1634,37 +1634,37 @@ void luaK_prefix (FuncState *fs, UnOpr opr, expdesc *e, int line) {
 void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
   luaK_dischargevars(fs, v);
   switch (op) {
-    case OPR_AND: {
+    case BinOpr::OPR_AND: {
       luaK_goiftrue(fs, v);  /* go ahead only if 'v' is true */
       break;
     }
-    case OPR_OR: {
+    case BinOpr::OPR_OR: {
       luaK_goiffalse(fs, v);  /* go ahead only if 'v' is false */
       break;
     }
-    case OPR_CONCAT: {
+    case BinOpr::OPR_CONCAT: {
       luaK_exp2nextreg(fs, v);  /* operand must be on the stack */
       break;
     }
-    case OPR_ADD: case OPR_SUB:
-    case OPR_MUL: case OPR_DIV: case OPR_IDIV:
-    case OPR_MOD: case OPR_POW:
-    case OPR_BAND: case OPR_BOR: case OPR_BXOR:
-    case OPR_SHL: case OPR_SHR: {
-      if (!tonumeral(v, NULL))
+    case BinOpr::OPR_ADD: case BinOpr::OPR_SUB:
+    case BinOpr::OPR_MUL: case BinOpr::OPR_DIV: case BinOpr::OPR_IDIV:
+    case BinOpr::OPR_MOD: case BinOpr::OPR_POW:
+    case BinOpr::OPR_BAND: case BinOpr::OPR_BOR: case BinOpr::OPR_BXOR:
+    case BinOpr::OPR_SHL: case BinOpr::OPR_SHR: {
+      if (!tonumeral(v, nullptr))
         luaK_exp2anyreg(fs, v);
       /* else keep numeral, which may be folded or used as an immediate
          operand */
       break;
     }
-    case OPR_EQ: case OPR_NE: {
-      if (!tonumeral(v, NULL))
+    case BinOpr::OPR_EQ: case BinOpr::OPR_NE: {
+      if (!tonumeral(v, nullptr))
         exp2RK(fs, v);
       /* else keep numeral, which may be an immediate operand */
       break;
     }
-    case OPR_LT: case OPR_LE:
-    case OPR_GT: case OPR_GE: {
+    case BinOpr::OPR_LT: case BinOpr::OPR_LE:
+    case BinOpr::OPR_GT: case BinOpr::OPR_GE: {
       int dummy, dummy2;
       if (!isSCnumber(v, &dummy, &dummy2))
         luaK_exp2anyreg(fs, v);
@@ -1706,41 +1706,41 @@ void luaK_posfix (FuncState *fs, BinOpr opr,
   if (foldbinop(opr) && constfolding(fs, opr + LUA_OPADD, e1, e2))
     return;  /* done by folding */
   switch (opr) {
-    case OPR_AND: {
+    case BinOpr::OPR_AND: {
       lua_assert(e1->t == NO_JUMP);  /* list closed by 'luaK_infix' */
       luaK_concat(fs, &e2->f, e1->f);
       *e1 = *e2;
       break;
     }
-    case OPR_OR: {
+    case BinOpr::OPR_OR: {
       lua_assert(e1->f == NO_JUMP);  /* list closed by 'luaK_infix' */
       luaK_concat(fs, &e2->t, e1->t);
       *e1 = *e2;
       break;
     }
-    case OPR_CONCAT: {  /* e1 .. e2 */
+    case BinOpr::OPR_CONCAT: {  /* e1 .. e2 */
       luaK_exp2nextreg(fs, e2);
       codeconcat(fs, e1, e2, line);
       break;
     }
-    case OPR_ADD: case OPR_MUL: {
+    case BinOpr::OPR_ADD: case BinOpr::OPR_MUL: {
       codecommutative(fs, opr, e1, e2, line);
       break;
     }
-    case OPR_SUB: {
+    case BinOpr::OPR_SUB: {
       if (finishbinexpneg(fs, e1, e2, OP_ADDI, line, TM_SUB))
         break; /* coded as (r1 + -I) */
       /* ELSE */
     }  /* FALLTHROUGH */
-    case OPR_DIV: case OPR_IDIV: case OPR_MOD: case OPR_POW: {
+    case BinOpr::OPR_DIV: case BinOpr::OPR_IDIV: case BinOpr::OPR_MOD: case BinOpr::OPR_POW: {
       codearith(fs, opr, e1, e2, 0, line);
       break;
     }
-    case OPR_BAND: case OPR_BOR: case OPR_BXOR: {
+    case BinOpr::OPR_BAND: case BinOpr::OPR_BOR: case BinOpr::OPR_BXOR: {
       codebitwise(fs, opr, e1, e2, line);
       break;
     }
-    case OPR_SHL: {
+    case BinOpr::OPR_SHL: {
       if (isSCint(e1)) {
         swapexps(e1, e2);
         codebini(fs, OP_SHLI, e1, e2, 1, line, TM_SHL);  /* I << r2 */
@@ -1752,23 +1752,23 @@ void luaK_posfix (FuncState *fs, BinOpr opr,
        codebinexpval(fs, opr, e1, e2, line);
       break;
     }
-    case OPR_SHR: {
+    case BinOpr::OPR_SHR: {
       if (isSCint(e2))
         codebini(fs, OP_SHRI, e1, e2, 0, line, TM_SHR);  /* r1 >> I */
       else  /* regular case (two registers) */
         codebinexpval(fs, opr, e1, e2, line);
       break;
     }
-    case OPR_EQ: case OPR_NE: {
+    case BinOpr::OPR_EQ: case BinOpr::OPR_NE: {
       codeeq(fs, opr, e1, e2);
       break;
     }
-    case OPR_GT: case OPR_GE: {
+    case BinOpr::OPR_GT: case BinOpr::OPR_GE: {
       /* '(a > b)' <=> '(b < a)';  '(a >= b)' <=> '(b <= a)' */
       swapexps(e1, e2);
-      opr = cast(BinOpr, (opr - OPR_GT) + OPR_LT);
+      opr = cast(BinOpr, (opr - BinOpr::OPR_GT) + BinOpr::OPR_LT);
     }  /* FALLTHROUGH */
-    case OPR_LT: case OPR_LE: {
+    case BinOpr::OPR_LT: case BinOpr::OPR_LE: {
       codeorder(fs, opr, e1, e2);
       break;
     }
