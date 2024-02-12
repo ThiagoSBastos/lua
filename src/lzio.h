@@ -10,21 +10,16 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 #include "lua.h"
 #include "lmem.h"
-
 #ifdef __cplusplus
 }
-#endif
-
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 constexpr int EOZ = (-1);			/* end of stream */
 
 namespace lua::zio {
+
 class Zio
 {
 public:
@@ -54,31 +49,31 @@ constexpr int zgetc(lua::zio::Zio* z) {
 }// namespace lua::zio
 
 
-typedef struct Mbuffer {
+class Mbuffer {
+public:
+  // TODO: change this to a constructor as soon as SParser becomes a class
+  constexpr void luaZ_initbuffer(lua_State* L) {
+    this->buffer = nullptr;
+    this->buffsize = 0;
+  }
+  [[nodiscard]] constexpr const char* luaZ_buffer() const { return this->buffer; }
+  [[nodiscard]] constexpr size_t luaZ_sizebuffer() const { return this->buffsize; }
+  constexpr void luaZ_resetbuffer() { this->n = 0; }
+  constexpr void luaZ_buffremove(int i) { this->n -= (i); }
+  constexpr void luaZ_resizebuffer(lua_State* L, size_t size) {
+    this->buffer = luaM_reallocvchar(L, this->buffer, this->buffsize, size);
+    this->buffsize = size;
+  }
+  constexpr void luaZ_freebuffer(lua_State* L) { luaZ_resizebuffer(L, 0); }
   char *buffer;
   size_t n;
   size_t buffsize;
-} Mbuffer;
-
-#define luaZ_initbuffer(L, buff) ((buff)->buffer = nullptr, (buff)->buffsize = 0)
-
-#define luaZ_buffer(buff)	((buff)->buffer)
-#define luaZ_sizebuffer(buff)	((buff)->buffsize)
-#define luaZ_bufflen(buff)	((buff)->n)
-
-#define luaZ_buffremove(buff,i)	((buff)->n -= (i))
-#define luaZ_resetbuffer(buff) ((buff)->n = 0)
+};
 
 
-#define luaZ_resizebuffer(L, buff, size) \
-	((buff)->buffer = luaM_reallocvchar(L, (buff)->buffer, \
-				(buff)->buffsize, size), \
-	(buff)->buffsize = size)
 
-#define luaZ_freebuffer(L, buff)	luaZ_resizebuffer(L, buff, 0)
+#define luaZ_bufflen(buff) ((buff)->n)
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif
