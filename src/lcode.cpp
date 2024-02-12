@@ -603,7 +603,7 @@ static int luaK_numberK (FuncState *fs, lua_Number r) {
   TValue o;
   lua_Integer ik;
   setfltvalue(&o, r);
-  if (!luaV_flttointeger(r, &ik, F2Ieq))  /* not an integral value? */
+  if (!luaV_flttointeger(r, &ik, F2Imod::F2Ieq))  /* not an integral value? */
     return addk(fs, &o, &o);  /* use number itself as key */
   else {  /* must build an alternative key */
     const int nbm = l_floatatt(MANT_DIG);
@@ -679,7 +679,7 @@ void luaK_int (FuncState *fs, int reg, lua_Integer i) {
 
 static void luaK_float (FuncState *fs, int reg, lua_Number f) {
   lua_Integer fi;
-  if (luaV_flttointeger(f, &fi, F2Ieq) && fitsBx(fi))
+  if (luaV_flttointeger(f, &fi, F2Imod::F2Ieq) && fitsBx(fi))
     codeAsBx(fs, OP_LOADF, reg, cast_int(fi));
   else
     luaK_codek(fs, reg, luaK_numberK(fs, f));
@@ -1256,7 +1256,7 @@ static int isSCnumber (expdesc *e, int *pi, int *isfloat) {
   lua_Integer i;
   if (e->k == VKINT)
     i = e->u.ival;
-  else if (e->k == VKFLT && luaV_flttointeger(e->u.nval, &i, F2Ieq))
+  else if (e->k == VKFLT && luaV_flttointeger(e->u.nval, &i, F2Imod::F2Ieq))
     *isfloat = 1;
   else
     return 0;  /* not a number */

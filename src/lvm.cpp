@@ -112,7 +112,7 @@ static int l_strton (const TValue *obj, TValue *result) {
 int luaV_tonumber_ (const TValue *obj, lua_Number *n) {
   TValue v;
   if (ttisinteger(obj)) {
-    *n = cast_num(ivalue(obj));
+    *n = static_cast<lua_Number>(ivalue(obj));
     return 1;
   }
   else if (l_strton(obj, &v)) {  /* string coercible to number? */
@@ -130,8 +130,8 @@ int luaV_tonumber_ (const TValue *obj, lua_Number *n) {
 int luaV_flttointeger (lua_Number n, lua_Integer *p, F2Imod mode) {
   lua_Number f = l_floor(n);
   if (n != f) {  /* not an integral value? */
-    if (mode == F2Ieq) return 0;  /* fails if mode demands integral value */
-    else if (mode == F2Iceil)  /* needs ceil? */
+    if (mode == F2Imod::F2Ieq) return 0;  /* fails if mode demands integral value */
+    else if (mode == F2Imod::F2Iceil)  /* needs ceil? */
       f += 1;  /* convert floor to ceil (remember: n != f) */
   }
   return lua_numbertointeger(f, p);
@@ -184,7 +184,7 @@ int luaV_tointeger (const TValue *obj, lua_Integer *p, F2Imod mode) {
 */
 static int forlimit (lua_State *L, lua_Integer init, const TValue *lim,
                                    lua_Integer *p, lua_Integer step) {
-  if (!luaV_tointeger(lim, p, (step < 0 ? F2Iceil : F2Ifloor))) {
+  if (!luaV_tointeger(lim, p, (step < 0 ? F2Imod::F2Iceil : F2Imod::F2Ifloor))) {
     /* not coercible to in integer */
     lua_Number flim;  /* try to convert to float */
     if (!tonumber(lim, &flim)) /* cannot convert to float? */
@@ -244,17 +244,22 @@ static int forprep (lua_State *L, StkId ra) {
   }
   else {  /* try making all values floats */
     lua_Number init; lua_Number limit; lua_Number step;
-    if (l_unlikely(!tonumber(plimit, &limit)))
+    if (!tonumber(plimit, &limit)) [[unlikely]] {
       luaG_forerror(L, plimit, "limit");
-    if (l_unlikely(!tonumber(pstep, &step)))
+    }
+    if (!tonumber(pstep, &step)) [[unlikely]] {
       luaG_forerror(L, pstep, "step");
-    if (l_unlikely(!tonumber(pinit, &init)))
+    }
+    if (!tonumber(pinit, &init)) [[unlikely]] {
       luaG_forerror(L, pinit, "initial value");
-    if (step == 0)
+    }
+    if (step == 0) {
       luaG_runerror(L, "'for' step is zero");
+    }
     if (luai_numlt(0, step) ? luai_numlt(limit, init)
-                            : luai_numlt(init, limit))
+                            : luai_numlt(init, limit)) {
       return 1;  /* skip the loop */
+    }
     else {
       /* make sure internal values are all floats */
       setfltvalue(plimit, limit);
@@ -290,7 +295,7 @@ static int floatforloop (StkId ra) {
 
 /*
 ** Finish the table access 'val = t[key]'.
-** if 'slot' is NULL, 't' is not a table; otherwise, 'slot' points to
+** if 'slot' is nullptr, 't' is not a table; otherwise, 'slot' points to
 ** t[k] entry (which must be empty).
 */
 void luaV_finishget (lua_State *L, const TValue *t, TValue *key, StkId val,
@@ -298,17 +303,18 @@ void luaV_finishget (lua_State *L, const TValue *t, TValue *key, StkId val,
   int loop;  /* counter to avoid infinite loops */
   const TValue *tm;  /* metamethod */
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
-    if (slot == NULL) {  /* 't' is not a table? */
+    if (slot == nullptr) {  /* 't' is not a table? */
       lua_assert(!ttistable(t));
       tm = luaT_gettmbyobj(L, t, TM_INDEX);
-      if (l_unlikely(notm(tm)))
+      if (notm(tm)) [[unlikely]] {
         luaG_typeerror(L, t, "index");  /* no metamethod */
+      }
       /* else will try the metamethod */
     }
     else {  /* 't' is a table */
       lua_assert(isempty(slot));
       tm = fasttm(L, hvalue(t)->metatable, TM_INDEX);  /* table's metamethod */
-      if (tm == NULL) {  /* no metamethod? */
+      if (tm == nullptr) {  /* no metamethod? */
         setnilvalue(s2v(val));  /* result is nil */
         return;
       }
@@ -331,7 +337,7 @@ void luaV_finishget (lua_State *L, const TValue *t, TValue *key, StkId val,
 
 /*
 ** Finish a table assignment 't[key] = val'.
-** If 'slot' is NULL, 't' is not a table.  Otherwise, 'slot' points
+** If 'slot' is nullptr, 't' is not a table.  Otherwise, 'slot' points
 ** to the entry 't[key]', or to a value with an absent key if there
 ** is no such entry.  (The value at 'slot' must be empty, otherwise
 ** 'luaV_fastget' would have done the job.)
@@ -341,11 +347,11 @@ void luaV_finishset (lua_State *L, const TValue *t, TValue *key,
   int loop;  /* counter to avoid infinite loops */
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;  /* '__newindex' metamethod */
-    if (slot != NULL) {  /* is 't' a table? */
+    if (slot != nullptr) {  /* is 't' a table? */
       Table *h = hvalue(t);  /* save 't' table */
       lua_assert(isempty(slot));  /* slot must be empty */
       tm = fasttm(L, h->metatable, TM_NEWINDEX);  /* get metamethod */
-      if (tm == NULL) {  /* no metamethod? */
+      if (tm == nullptr) {  /* no metamethod? */
         luaH_finishset(L, h, key, slot, val);  /* set new value */
         invalidateTMcache(h);
         luaC_barrierback(L, obj2gco(h), val);
@@ -355,8 +361,9 @@ void luaV_finishset (lua_State *L, const TValue *t, TValue *key,
     }
     else {  /* not a table; check metamethod */
       tm = luaT_gettmbyobj(L, t, TM_NEWINDEX);
-      if (l_unlikely(notm(tm)))
+      if (notm(tm)) [[unlikely]] {
         luaG_typeerror(L, t, "index");
+      }
     }
     /* try the metamethod */
     if (ttisfunction(tm)) {
@@ -422,7 +429,7 @@ l_sinline int LTintfloat (lua_Integer i, lua_Number f) {
     return luai_numlt(cast_num(i), f);  /* compare them as floats */
   else {  /* i < f <=> i < ceil(f) */
     lua_Integer fi;
-    if (luaV_flttointeger(f, &fi, F2Iceil))  /* fi = ceil(f) */
+    if (luaV_flttointeger(f, &fi, F2Imod::F2Iceil))  /* fi = ceil(f) */
       return i < fi;   /* compare them as integers */
     else  /* 'f' is either greater or less than all integers */
       return f > 0;  /* greater? */
@@ -439,7 +446,7 @@ l_sinline int LEintfloat (lua_Integer i, lua_Number f) {
     return luai_numle(cast_num(i), f);  /* compare them as floats */
   else {  /* i <= f <=> i <= floor(f) */
     lua_Integer fi;
-    if (luaV_flttointeger(f, &fi, F2Ifloor))  /* fi = floor(f) */
+    if (luaV_flttointeger(f, &fi, F2Imod::F2Ifloor))  /* fi = floor(f) */
       return i <= fi;   /* compare them as integers */
     else  /* 'f' is either greater or less than all integers */
       return f > 0;  /* greater? */
@@ -456,7 +463,7 @@ l_sinline int LTfloatint (lua_Number f, lua_Integer i) {
     return luai_numlt(f, cast_num(i));  /* compare them as floats */
   else {  /* f < i <=> floor(f) < i */
     lua_Integer fi;
-    if (luaV_flttointeger(f, &fi, F2Ifloor))  /* fi = floor(f) */
+    if (luaV_flttointeger(f, &fi, F2Imod::F2Ifloor))  /* fi = floor(f) */
       return fi < i;   /* compare them as integers */
     else  /* 'f' is either greater or less than all integers */
       return f < 0;  /* less? */
@@ -473,7 +480,7 @@ l_sinline int LEfloatint (lua_Number f, lua_Integer i) {
     return luai_numle(f, cast_num(i));  /* compare them as floats */
   else {  /* f <= i <=> ceil(f) <= i */
     lua_Integer fi;
-    if (luaV_flttointeger(f, &fi, F2Iceil))  /* fi = ceil(f) */
+    if (luaV_flttointeger(f, &fi, F2Imod::F2Iceil))  /* fi = ceil(f) */
       return fi <= i;   /* compare them as integers */
     else  /* 'f' is either greater or less than all integers */
       return f < 0;  /* less? */
@@ -571,7 +578,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 
 /*
 ** Main operation for equality of Lua values; return 't1 == t2'.
-** L == NULL means raw equality (no metamethods)
+** L == nullptr means raw equality (no metamethods)
 */
 int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
   const TValue *tm;
@@ -583,8 +590,8 @@ int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
          integer value, they cannot be equal; otherwise, compare their
          integer values. */
       lua_Integer i1, i2;
-      return (luaV_tointegerns(t1, &i1, F2Ieq) &&
-              luaV_tointegerns(t2, &i2, F2Ieq) &&
+      return (luaV_tointegerns(t1, &i1, F2Imod::F2Ieq) &&
+              luaV_tointegerns(t2, &i2, F2Imod::F2Ieq) &&
               i1 == i2);
     }
   }
@@ -599,24 +606,24 @@ int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
     case LUA_VLNGSTR: return luaS_eqlngstr(tsvalue(t1), tsvalue(t2));
     case LUA_VUSERDATA: {
       if (uvalue(t1) == uvalue(t2)) return 1;
-      else if (L == NULL) return 0;
+      else if (L == nullptr) return 0;
       tm = fasttm(L, uvalue(t1)->metatable, TM_EQ);
-      if (tm == NULL)
+      if (tm == nullptr)
         tm = fasttm(L, uvalue(t2)->metatable, TM_EQ);
       break;  /* will try TM */
     }
     case LUA_VTABLE: {
       if (hvalue(t1) == hvalue(t2)) return 1;
-      else if (L == NULL) return 0;
+      else if (L == nullptr) return 0;
       tm = fasttm(L, hvalue(t1)->metatable, TM_EQ);
-      if (tm == NULL)
+      if (tm == nullptr)
         tm = fasttm(L, hvalue(t2)->metatable, TM_EQ);
       break;  /* will try TM */
     }
     default:
       return gcvalue(t1) == gcvalue(t2);
   }
-  if (tm == NULL)  /* no TM? */
+  if (tm == nullptr)  /* no TM? */
     return 0;  /* objects are different */
   else {
     luaT_callTMres(L, tm, t1, t2, L->top.p);  /* call TM */
@@ -668,7 +675,7 @@ void luaV_concat (lua_State *L, int total) {
       /* collect total length and number of strings */
       for (n = 1; n < total && tostring(L, s2v(top - n - 1)); n++) {
         size_t l = tsslen(tsvalue(s2v(top - n - 1)));
-        if (l_unlikely(l >= (MAX_SIZE/sizeof(char)) - tl)) {
+        if (l >= (MAX_SIZE/sizeof(char)) - tl) [[unlikely]] {
           L->top.p = top - total;  /* pop strings to avoid wasting stack */
           luaG_runerror(L, "string length overflow");
         }
@@ -714,8 +721,9 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
     }
     default: {  /* try metamethod */
       tm = luaT_gettmbyobj(L, rb, TM_LEN);
-      if (l_unlikely(notm(tm)))  /* no metamethod? */
+      if (notm(tm)) [[unlikely]] { /* no metamethod? */
         luaG_typeerror(L, rb, "get length of");
+      }
       break;
     }
   }
@@ -730,9 +738,10 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
 ** otherwise 'floor(q) == trunc(q) - 1'.
 */
 lua_Integer luaV_idiv (lua_State *L, lua_Integer m, lua_Integer n) {
-  if (l_unlikely(l_castS2U(n) + 1u <= 1u)) {  /* special cases: -1 or 0 */
-    if (n == 0)
+  if (l_castS2U(n) + 1u <= 1u) [[unlikely]] {  /* special cases: -1 or 0 */
+    if (n == 0) {
       luaG_runerror(L, "attempt to divide by zero");
+    }
     return intop(-, 0, m);   /* n==-1; avoid overflow with 0x80000...//-1 */
   }
   else {
@@ -750,7 +759,7 @@ lua_Integer luaV_idiv (lua_State *L, lua_Integer m, lua_Integer n) {
 ** about luaV_idiv.)
 */
 lua_Integer luaV_mod (lua_State *L, lua_Integer m, lua_Integer n) {
-  if (l_unlikely(l_castS2U(n) + 1u <= 1u)) {  /* special cases: -1 or 0 */
+  if (l_castS2U(n) + 1u <= 1u) [[unlikely]] {  /* special cases: -1 or 0 */
     if (n == 0)
       luaG_runerror(L, "attempt to perform 'n%%0'");
     return 0;   /* m % -1 == 0; avoid overflow with 0x80000...%-1 */
@@ -775,7 +784,7 @@ lua_Number luaV_modf (lua_State *L, lua_Number m, lua_Number n) {
 
 
 /* number of bits in an integer */
-#define NBITS	cast_int(sizeof(lua_Integer) * CHAR_BIT)
+#define NBITS	static_cast<int>(sizeof(lua_Integer) * CHAR_BIT)
 
 
 /*
@@ -854,7 +863,7 @@ void luaV_finishOp (lua_State *L) {
     case OP_CONCAT: {
       StkId top = L->top.p - 1;  /* top when 'luaT_tryconcatTM' was called */
       int a = GETARG_A(inst);      /* first element to concatenate */
-      int total = cast_int(top - 1 - (base + a));  /* yet to concatenate */
+      int total = static_cast<int>(top - 1 - (base + a));  /* yet to concatenate */
       setobjs2s(L, top - 2, top);  /* put TM result in proper position */
       L->top.p = top - 1;  /* top is one after last element (at top-2) */
       luaV_concat(L, total);  /* concat them (may yield again) */
@@ -1085,7 +1094,7 @@ void luaV_finishOp (lua_State *L) {
 
 
 #define updatestack(ci)  \
-	{ if (l_unlikely(trap)) { updatebase(ci); ra = RA(i); } }
+	{ if (trap) [[unlikely]] { updatebase(ci); ra = RA(i); } }
 
 
 /*
@@ -1143,7 +1152,7 @@ void luaV_finishOp (lua_State *L) {
 
 /* fetch an instruction and prepare its execution */
 #define vmfetch()	{ \
-  if (l_unlikely(trap)) {  /* stack reallocation or hooks? */ \
+  if (trap) [[unlikely]] {  /* stack reallocation or hooks? */ \
     trap = luaG_traceexec(L, pc);  /* handle hooks */ \
     updatebase(ci);  /* correct stack */ \
   } \
@@ -1170,8 +1179,9 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
   cl = ci_func(ci);
   k = cl->p->k;
   pc = ci->u.l.savedpc;
-  if (l_unlikely(trap))
+  if (trap) [[unlikely]] {
     trap = luaG_tracecall(L);
+  }
   base = ci->func.p + 1;
   /* main loop of interpreter */
   for (;;) {
@@ -1686,7 +1696,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
           L->top.p = ra + b;  /* top signals number of arguments */
         /* else previous instruction set top */
         savepc(L);  /* in case of errors */
-        if ((newci = luaD_precall(L, ra, nresults)) == NULL)
+        if ((newci = luaD_precall(L, ra, nresults)) == nullptr)
           updatetrap(ci);  /* C call; nothing else to be done */
         else {  /* Lua call: run function in this same C frame */
           ci = newci;
@@ -1704,7 +1714,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         if (b != 0)
           L->top.p = ra + b;
         else  /* previous instruction set top */
-          b = cast_int(L->top.p - ra);
+          b = static_cast<int>(L->top.p - ra);
         savepc(ci);  /* several calls here can raise errors */
         if (TESTARG_k(i)) {
           luaF_closeupval(L, base);  /* close upvalues from current call */
@@ -1725,7 +1735,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         int n = GETARG_B(i) - 1;  /* number of results */
         int nparams1 = GETARG_C(i);
         if (n < 0)  /* not fixed? */
-          n = cast_int(L->top.p - ra);  /* get what is available */
+          n = static_cast<int>(L->top.p - ra);  /* get what is available */
         savepc(ci);
         if (TESTARG_k(i)) {  /* may there be open upvalues? */
           ci->u2.nres = n;  /* save number of returns */
@@ -1743,7 +1753,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         goto ret;
       }
       vmcase(OP_RETURN0) {
-        if (l_unlikely(L->hookmask)) {
+        if (L->hookmask) [[unlikely]] {
           StkId ra = RA(i);
           L->top.p = ra;
           savepc(ci);
@@ -1760,7 +1770,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         goto ret;
       }
       vmcase(OP_RETURN1) {
-        if (l_unlikely(L->hookmask)) {
+        if (L->hookmask) [[unlikely]] {
           StkId ra = RA(i);
           L->top.p = ra + 1;
           savepc(ci);
@@ -1855,7 +1865,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         unsigned int last = GETARG_C(i);
         Table *h = hvalue(s2v(ra));
         if (n == 0)
-          n = cast_int(L->top.p - ra) - 1;  /* get up to the top */
+          n = static_cast<int>(L->top.p - ra) - 1;  /* get up to the top */
         else
           L->top.p = ci->top.p;  /* correct top in case of emergency GC */
         last += n;
@@ -1888,7 +1898,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
       }
       vmcase(OP_VARARGPREP) {
         ProtectNT(luaT_adjustvarargs(L, GETARG_A(i), ci, cl->p));
-        if (l_unlikely(trap)) {  /* previous "Protect" updated trap */
+        if (trap) [[unlikely]] {  /* previous "Protect" updated trap */
           luaD_hookcall(L, ci);
           L->oldpc = 1;  /* next opcode will be seen as a "new" line */
         }

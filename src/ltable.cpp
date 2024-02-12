@@ -671,7 +671,7 @@ static void luaH_newkey (lua_State *L, Table *t, const TValue *key,
   else if (ttisfloat(key)) {
     lua_Number f = fltvalue(key);
     lua_Integer k;
-    if (luaV_flttointeger(f, &k, F2Ieq)) {  /* does key fit in an integer? */
+    if (luaV_flttointeger(f, &k, F2Imod::F2Ieq)) {  /* does key fit in an integer? */
       setivalue(&aux, k);
       key = &aux;  /* insert it as an integer */
     }
@@ -793,7 +793,7 @@ const TValue *luaH_get (Table *t, const TValue *key) {
     case LUA_VNIL: return &absentkey;
     case LUA_VNUMFLT: {
       lua_Integer k;
-      if (luaV_flttointeger(fltvalue(key), &k, F2Ieq)) /* integral index? */
+      if (luaV_flttointeger(fltvalue(key), &k, F2Imod::F2Ieq)) /* integral index? */
         return luaH_getint(t, k);  /* use specialized version */
       /* else... */
     }  /* FALLTHROUGH */
