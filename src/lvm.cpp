@@ -1604,7 +1604,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
       }
       vmcase(OP_CLOSE) {
         StkId ra = RA(i);
-        Protect(luaF_close(L, ra, LUA_OK, 1));
+        Protect(luaF_close(L, ra, ThreadStatus::LUA_OK, 1));
         vmbreak;
       }
       vmcase(OP_TBC) {

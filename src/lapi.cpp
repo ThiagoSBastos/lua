@@ -1008,7 +1008,7 @@ LUA_API void lua_callk (lua_State *L, int nargs, int nresults,
   api_check(L, k == NULL || !isLua(L->ci),
     "cannot use continuations inside hooks");
   api_checknelems(L, nargs+1);
-  api_check(L, L->status == LUA_OK, "cannot do calls on non-normal thread");
+  api_check(L, L->status == ThreadStatus::LUA_OK, "cannot do calls on non-normal thread");
   checkresults(L, nargs, nresults);
   func = L->top.p - (nargs+1);
   if (k != NULL && yieldable(L)) {  /* need to prepare continuation? */
@@ -1076,7 +1076,7 @@ LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
     luaD_call(L, c.func, nresults);  /* do the call */
     ci->callstatus &= ~CIST_YPCALL;
     L->errfunc = ci->u.c.old_errfunc;
-    status = LUA_OK;  /* if it is here, there were no errors */
+    status = ThreadStatus::LUA_OK;  /* if it is here, there were no errors */
   }
   adjustresults(L, nresults);
   lua_unlock(L);
@@ -1092,7 +1092,7 @@ LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
   }
   auto z = lua::zio::Zio(L, reader, data);
   int status = luaD_protectedparser(L, &z, chunkname, mode);
-  if (status == LUA_OK) {  /* no errors? */
+  if (status == ThreadStatus::LUA_OK) {  /* no errors? */
     LClosure *f = clLvalue(s2v(L->top.p - 1));  /* get new function */
     if (f->nupvalues >= 1) {  /* does it have an upvalue? */
       /* get global table from registry */

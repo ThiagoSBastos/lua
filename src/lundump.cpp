@@ -39,7 +39,7 @@ typedef struct {
 
 static l_noret error (LoadState *S, const char *why) {
   luaO_pushfstring(S->L, "%s: bad binary format (%s)", S->name, why);
-  luaD_throw(S->L, LUA_ERRSYNTAX);
+  luaD_throw(S->L, ThreadStatus::LUA_ERRSYNTAX);
 }
 
 

@@ -27,7 +27,7 @@ typedef struct luaL_Buffer luaL_Buffer;
 
 
 /* extra error code for 'luaL_loadfilex' */
-#define LUA_ERRFILE     (LUA_ERRERR+1)
+#define LUA_ERRFILE     (ThreadStatus::LUA_ERRERR+1)
 
 
 /* key, in the registry, for table of loaded modules */

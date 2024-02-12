@@ -1121,7 +1121,7 @@ static int doonnewstack (lua_State *L) {
   size_t l;
   const char *s = luaL_checklstring(L, 1, &l);
   int status = luaL_loadbuffer(L1, s, l, s);
-  if (status == LUA_OK)
+  if (status == ThreadStatus::LUA_OK)
     status = lua_pcall(L1, 0, 0, 0);
   lua_pushinteger(L, status);
   return 1;
@@ -1210,9 +1210,9 @@ static int doremote (lua_State *L) {
   int status;
   lua_settop(L1, 0);
   status = luaL_loadbuffer(L1, code, lcode, code);
-  if (status == LUA_OK)
+  if (status == ThreadStatus::LUA_OK)
     status = lua_pcall(L1, 0, LUA_MULTRET, 0);
-  if (status != LUA_OK) {
+  if (status != ThreadStatus::LUA_OK) {
     lua_pushnil(L);
     lua_pushstring(L, lua_tostring(L1, -1));
     lua_pushinteger(L, status);
@@ -1892,7 +1892,7 @@ static int coresume (lua_State *L) {
   lua_State *co = lua_tothread(L, 1);
   luaL_argcheck(L, co, 1, "coroutine expected");
   status = lua_resume(co, L, 0, &nres);
-  if (status != LUA_OK && status != LUA_YIELD) {
+  if (status != ThreadStatus::LUA_OK && status != ThreadStatus::LUA_YIELD) {
     lua_pushboolean(L, 0);
     lua_insert(L, -2);
     return 2;  /* return false + error message */

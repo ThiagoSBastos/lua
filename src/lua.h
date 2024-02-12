@@ -49,13 +49,14 @@ extern "C" {
 
 
 /* thread status */
-#define LUA_OK		0
-#define LUA_YIELD	1
-#define LUA_ERRRUN	2
-#define LUA_ERRSYNTAX	3
-#define LUA_ERRMEM	4
-#define LUA_ERRERR	5
-
+enum ThreadStatus {
+    LUA_OK,
+    LUA_YIELD,
+    LUA_ERRRUN,
+    LUA_ERRSYNTAX,
+    LUA_ERRMEM,
+    LUA_ERRERR
+};
 
 typedef struct lua_State lua_State;
 

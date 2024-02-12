@@ -41,8 +41,8 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
   }
   lua_xmove(L, co, narg);
   status = lua_resume(co, L, narg, &nres);
-  if (l_likely(status == LUA_OK || status == LUA_YIELD)) {
-    if (l_unlikely(!lua_checkstack(L, nres + 1))) {
+  if (status == ThreadStatus::LUA_OK || status == ThreadStatus::LUA_YIELD) [[likely]] {
+    if (!lua_checkstack(L, nres + 1))[[unlikely]] {
       lua_pop(co, nres);  /* remove results anyway */
       lua_pushliteral(L, "too many results to resume");
       return -1;  /* error flag */
@@ -79,12 +79,12 @@ static int luaB_auxwrap (lua_State *L) {
   int r = auxresume(L, co, lua_gettop(L));
   if (l_unlikely(r < 0)) {  /* error? */
     int stat = lua_status(co);
-    if (stat != LUA_OK && stat != LUA_YIELD) {  /* error in the coroutine? */
+    if (stat != ThreadStatus::LUA_OK && stat != ThreadStatus::LUA_YIELD) {  /* error in the coroutine? */
       stat = lua_closethread(co, L);  /* close its tbc variables */
       lua_assert(stat != LUA_OK);
       lua_xmove(co, L, 1);  /* move error message to the caller */
     }
-    if (stat != LUA_ERRMEM &&  /* not a memory error and ... */
+    if (stat != ThreadStatus::LUA_ERRMEM &&  /* not a memory error and ... */
         lua_type(L, -1) == LUA_TSTRING) {  /* ... error object is a string? */
       luaL_where(L, 1);  /* add extra info, if available */
       lua_insert(L, -2);
@@ -132,9 +132,9 @@ static int auxstatus (lua_State *L, lua_State *co) {
   if (L == co) return COS_RUN;
   else {
     switch (lua_status(co)) {
-      case LUA_YIELD:
+      case ThreadStatus::LUA_YIELD:
         return COS_YIELD;
-      case LUA_OK: {
+      case ThreadStatus::LUA_OK: {
         lua_Debug ar;
         if (lua_getstack(co, 0, &ar))  /* does it have frames? */
           return COS_NORM;  /* it is running */
@@ -177,7 +177,7 @@ static int luaB_close (lua_State *L) {
   switch (status) {
     case COS_DEAD: case COS_YIELD: {
       status = lua_closethread(co, L);
-      if (status == LUA_OK) {
+      if (status == ThreadStatus::LUA_OK) {
         lua_pushboolean(L, 1);
         return 1;
       }

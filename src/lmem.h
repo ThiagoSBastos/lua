@@ -17,7 +17,7 @@ extern "C" {
 #include "lua.h"
 
 
-#define luaM_error(L)	luaD_throw(L, LUA_ERRMEM)
+#define luaM_error(L)	luaD_throw(L, ThreadStatus::LUA_ERRMEM)
 
 
 /*
