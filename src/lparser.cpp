@@ -9,9 +9,8 @@
 
 #include "lprefix.h"
 
-
-#include <limits.h>
-#include <string.h>
+#include <climits>
+#include <cstring>
 
 #include "lua.h"
 
@@ -143,7 +142,7 @@ static void check_match (LexState *ls, int what, int who, int where) {
 static TString *str_checkname (LexState *ls) {
   TString *ts;
   check(ls, TK_NAME);
-  ts = ls->t.seminfo.ts;
+  ts = std::get<TString*>(ls->t.seminfo);
   luaX_next(ls);
   return ts;
 }
@@ -1045,7 +1044,7 @@ static void funcargs (LexState *ls, expdesc *f) {
       break;
     }
     case TK_STRING: {  /* funcargs -> STRING */
-      codestring(&args, ls->t.seminfo.ts);
+      codestring(&args, std::get<TString*>(ls->t.seminfo));
       luaX_next(ls);  /* must use 'seminfo' before 'next' */
       break;
     }
@@ -1143,16 +1142,16 @@ static void simpleexp (LexState *ls, expdesc *v) {
   switch (ls->t.token) {
     case TK_FLT: {
       init_exp(v, VKFLT, 0);
-      v->u.nval = ls->t.seminfo.r;
+      v->u.nval = std::get<lua_Number>(ls->t.seminfo);
       break;
     }
     case TK_INT: {
       init_exp(v, VKINT, 0);
-      v->u.ival = ls->t.seminfo.i;
+      v->u.ival = std::get<lua_Integer>(ls->t.seminfo);
       break;
     }
     case TK_STRING: {
-      codestring(v, ls->t.seminfo.ts);
+      codestring(v, std::get<TString*>(ls->t.seminfo));
       break;
     }
     case TK_NIL: {

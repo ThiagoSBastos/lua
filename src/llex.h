@@ -7,13 +7,11 @@
 #ifndef llex_h
 #define llex_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <limits.h>
+#include <climits>
+#include <variant>
 
 #include "lobject.h"
+#include "lua.h"
 #include "lzio.h"
 
 
@@ -49,23 +47,18 @@ enum RESERVED {
 /* number of reserved words */
 #define NUM_RESERVED	(cast_int(TK_WHILE-FIRST_RESERVED + 1))
 
+// Semantics information
+using SemInfo = std::variant<lua_Number, lua_Integer, TString*>;
 
-typedef union {
-  lua_Number r;
-  lua_Integer i;
-  TString *ts;
-} SemInfo;  /* semantics information */
-
-
-typedef struct Token {
+struct Token {
   int token;
   SemInfo seminfo;
-} Token;
+};
 
 
 /* state of the lexer plus state of the parser when shared by all
    functions */
-typedef struct LexState {
+struct LexState {
   int current;  /* current character (charint) */
   int linenumber;  /* input line counter */
   int lastline;  /* line of last token 'consumed' */
@@ -79,7 +72,7 @@ typedef struct LexState {
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
   TString *source;  /* current source name */
   TString *envn;  /* environment variable name */
-} LexState;
+};
 
 
 LUAI_FUNC void luaX_init (lua_State *L);
@@ -90,9 +83,5 @@ LUAI_FUNC void luaX_next (LexState *ls);
 LUAI_FUNC int luaX_lookahead (LexState *ls);
 LUAI_FUNC l_noret luaX_syntaxerror (LexState *ls, const char *s);
 LUAI_FUNC const char *luaX_token2str (LexState *ls, int token);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

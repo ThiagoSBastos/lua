@@ -7,11 +7,12 @@
 #ifndef lcode_h
 #define lcode_h
 
+#include "llex.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "llex.h"
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lparser.h"

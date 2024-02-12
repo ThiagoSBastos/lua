@@ -245,12 +245,12 @@ static int read_numeral (LexState *ls, SemInfo *seminfo) {
   if (luaO_str2num(ls->buff->luaZ_buffer(), &obj) == 0)  /* format error? */
     lexerror(ls, "malformed number", TK_FLT);
   if (ttisinteger(&obj)) {
-    seminfo->i = ivalue(&obj);
+    *seminfo = ivalue(&obj);
     return TK_INT;
   }
   else {
     lua_assert(ttisfloat(&obj));
-    seminfo->r = fltvalue(&obj);
+    *seminfo = fltvalue(&obj);
     return TK_FLT;
   }
 }
@@ -311,7 +311,7 @@ static void read_long_string (LexState *ls, SemInfo *seminfo, size_t sep) {
     }
   } endloop:
   if (seminfo)
-    seminfo->ts = luaX_newstring(ls, ls->buff->luaZ_buffer() + sep,
+    *seminfo = luaX_newstring(ls, ls->buff->luaZ_buffer() + sep,
                                      luaZ_bufflen(ls->buff) - 2 * sep);
 }
 
@@ -437,7 +437,7 @@ static void read_string (LexState *ls, int del, SemInfo *seminfo) {
     }
   }
   save_and_next(ls);  /* skip delimiter */
-  seminfo->ts = luaX_newstring(ls, ls->buff->luaZ_buffer() + 1,
+  *seminfo = luaX_newstring(ls, ls->buff->luaZ_buffer() + 1,
                                    luaZ_bufflen(ls->buff) - 2);
 }
 
@@ -544,7 +544,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           } while (lislalnum(ls->current));
           ts = luaX_newstring(ls, ls->buff->luaZ_buffer(),
                                   luaZ_bufflen(ls->buff));
-          seminfo->ts = ts;
+          *seminfo = ts;
           if (isreserved(ts))  /* reserved word? */
             return ts->extra - 1 + FIRST_RESERVED;
           else {
