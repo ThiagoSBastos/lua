@@ -198,7 +198,7 @@ enum OpMode {iABC, iABx, iAsBx, iAx, isJ};  /* basic instruction formats */
 ** has extra descriptions in the notes after the enumeration.
 */
 
-typedef enum {
+enum OpCode : unsigned int {
 /*----------------------------------------------------------------------
   name		args	description
 ------------------------------------------------------------------------*/
@@ -310,12 +310,10 @@ OP_VARARG,/*	A C	R[A], R[A+1], ..., R[A+C-2] = vararg		*/
 
 OP_VARARGPREP,/*A	(adjust vararg parameters)			*/
 
-OP_EXTRAARG/*	Ax	extra (larger) argument for previous opcode	*/
-} OpCode;
+OP_EXTRAARG, /*	Ax	extra (larger) argument for previous opcode	*/
 
-
-#define NUM_OPCODES	((int)(OP_EXTRAARG) + 1)
-
+NUM_OPCODES
+};
 
 
 /*===========================================================================
@@ -384,7 +382,7 @@ OP_EXTRAARG/*	Ax	extra (larger) argument for previous opcode	*/
 
 LUAI_DDEC(const lu_byte luaP_opmodes[NUM_OPCODES];)
 
-#define getOpMode(m)	(cast(enum OpMode, luaP_opmodes[m] & 7))
+#define getOpMode(m)	(static_cast<OpMode(luaP_opmodes[m] & 7))
 #define testAMode(m)	(luaP_opmodes[m] & (1 << 3))
 #define testTMode(m)	(luaP_opmodes[m] & (1 << 4))
 #define testITMode(m)	(luaP_opmodes[m] & (1 << 5))
@@ -399,8 +397,14 @@ LUAI_DDEC(const lu_byte luaP_opmodes[NUM_OPCODES];)
 /* "in top" (uses top from previous instruction) */
 #define isIT(i)		(testITMode(GET_OPCODE(i)) && GETARG_B(i) == 0)
 
-#define opmode(mm,ot,it,t,a,m)  \
-    (((mm) << 7) | ((ot) << 6) | ((it) << 5) | ((t) << 4) | ((a) << 3) | (m))
+constexpr unsigned int opmode(unsigned int mm,
+                              unsigned int ot,
+                              unsigned int it,
+                              unsigned int t,
+                              unsigned int a,
+                              OpMode m) {
+    return (((mm) << 7) | ((ot) << 6) | ((it) << 5) | ((t) << 4) | ((a) << 3) | (m));
+}
 
 
 /* number of list items to accumulate before a SETLIST instruction */

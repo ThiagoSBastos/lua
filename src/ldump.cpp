@@ -20,13 +20,13 @@
 #include "lundump.h"
 
 
-typedef struct {
+struct DumpState {
   lua_State *L;
   lua_Writer writer;
   void *data;
   int strip;
   int status;
-} DumpState;
+};
 
 
 /*
