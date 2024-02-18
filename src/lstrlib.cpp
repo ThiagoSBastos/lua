@@ -23,6 +23,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits>
 
 #include "lua.h"
 
@@ -259,8 +260,8 @@ static int str_dump (lua_State *L) {
 /* no coercion from strings to numbers */
 
 static const luaL_Reg stringmetamethods[] = {
-  {"__index", NULL},  /* placeholder */
-  {NULL, NULL}
+  {"__index", nullptr},  /* placeholder */
+  {nullptr, nullptr}
 };
 
 #else		/* }{ */
@@ -273,7 +274,7 @@ static int tonum (lua_State *L, int arg) {
   else {  /* check whether it is a numerical string */
     size_t len;
     const char *s = lua_tolstring(L, arg, &len);
-    return (s != NULL && lua_stringtonumber(L, s) == len + 1);
+    return (s != nullptr && lua_stringtonumber(L, s) == len + 1);
   }
 }
 
@@ -340,8 +341,8 @@ static const luaL_Reg stringmetamethods[] = {
   {"__div", arith_div},
   {"__idiv", arith_idiv},
   {"__unm", arith_unm},
-  {"__index", NULL},  /* placeholder */
-  {NULL, NULL}
+  {"__index", nullptr},  /* placeholder */
+  {nullptr, nullptr}
 };
 
 #endif		/* } */
@@ -491,7 +492,7 @@ static const char *matchbalance (MatchState *ms, const char *s,
                                    const char *p) {
   if (l_unlikely(p >= ms->p_end - 1))
     luaL_error(ms->L, "malformed pattern (missing arguments to '%%b')");
-  if (*s != *p) return NULL;
+  if (*s != *p) return nullptr;
   else {
     int b = *p;
     int e = *(p+1);
@@ -503,7 +504,7 @@ static const char *matchbalance (MatchState *ms, const char *s,
       else if (*s == b) cont++;
     }
   }
-  return NULL;  /* string ends out of balance */
+  return nullptr;  /* string ends out of balance */
 }
 
 
@@ -518,7 +519,7 @@ static const char *max_expand (MatchState *ms, const char *s,
     if (res) return res;
     i--;  /* else didn't match; reduce 1 repetition to try again */
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -526,11 +527,11 @@ static const char *min_expand (MatchState *ms, const char *s,
                                  const char *p, const char *ep) {
   for (;;) {
     const char *res = match(ms, s, ep+1);
-    if (res != NULL)
+    if (res != nullptr)
       return res;
     else if (singlematch(ms, s, p, ep))
       s++;  /* try with one more repetition */
-    else return NULL;
+    else return nullptr;
   }
 }
 
@@ -543,7 +544,7 @@ static const char *start_capture (MatchState *ms, const char *s,
   ms->capture[level].init = s;
   ms->capture[level].len = what;
   ms->level = level+1;
-  if ((res=match(ms, s, p)) == NULL)  /* match failed? */
+  if ((res=match(ms, s, p)) == nullptr)  /* match failed? */
     ms->level--;  /* undo capture */
   return res;
 }
@@ -554,7 +555,7 @@ static const char *end_capture (MatchState *ms, const char *s,
   int l = capture_to_close(ms);
   const char *res;
   ms->capture[l].len = s - ms->capture[l].init;  /* close capture */
-  if ((res = match(ms, s, p)) == NULL)  /* match failed? */
+  if ((res = match(ms, s, p)) == nullptr)  /* match failed? */
     ms->capture[l].len = CAP_UNFINISHED;  /* undo capture */
   return res;
 }
@@ -567,7 +568,7 @@ static const char *match_capture (MatchState *ms, const char *s, int l) {
   if ((size_t)(ms->src_end-s) >= len &&
       memcmp(ms->capture[l].init, s, len) == 0)
     return s+len;
-  else return NULL;
+  else return nullptr;
 }
 
 
@@ -591,16 +592,16 @@ static const char *match (MatchState *ms, const char *s, const char *p) {
       case '$': {
         if ((p + 1) != ms->p_end)  /* is the '$' the last char in pattern? */
           goto dflt;  /* no; go to default */
-        s = (s == ms->src_end) ? s : NULL;  /* check end of string */
+        s = (s == ms->src_end) ? s : nullptr;  /* check end of string */
         break;
       }
       case L_ESC: {  /* escaped sequences not in the format class[*+?-]? */
         switch (*(p + 1)) {
           case 'b': {  /* balanced string? */
             s = matchbalance(ms, s, p + 2);
-            if (s != NULL) {
+            if (s != nullptr) {
               p += 4; goto init;  /* return match(ms, s, p + 4); */
-            }  /* else fail (s == NULL) */
+            }  /* else fail (s == nullptr) */
             break;
           }
           case 'f': {  /* frontier? */
@@ -614,14 +615,14 @@ static const char *match (MatchState *ms, const char *s, const char *p) {
                matchbracketclass(uchar(*s), p, ep - 1)) {
               p = ep; goto init;  /* return match(ms, s, ep); */
             }
-            s = NULL;  /* match failed */
+            s = nullptr;  /* match failed */
             break;
           }
           case '0': case '1': case '2': case '3':
           case '4': case '5': case '6': case '7':
           case '8': case '9': {  /* capture results (%0-%9)? */
             s = match_capture(ms, s, uchar(*(p + 1)));
-            if (s != NULL) {
+            if (s != nullptr) {
               p += 2; goto init;  /* return match(ms, s, p + 2) */
             }
             break;
@@ -638,13 +639,13 @@ static const char *match (MatchState *ms, const char *s, const char *p) {
             p = ep + 1; goto init;  /* return match(ms, s, ep + 1); */
           }
           else  /* '+' or no suffix */
-            s = NULL;  /* fail */
+            s = nullptr;  /* fail */
         }
         else {  /* matched once */
           switch (*ep) {  /* handle optional suffix */
             case '?': {  /* optional */
               const char *res;
-              if ((res = match(ms, s + 1, ep + 1)) != NULL)
+              if ((res = match(ms, s + 1, ep + 1)) != nullptr)
                 s = res;
               else {
                 p = ep + 1; goto init;  /* else return match(ms, s, ep + 1); */
@@ -677,12 +678,12 @@ static const char *match (MatchState *ms, const char *s, const char *p) {
 static const char *lmemfind (const char *s1, size_t l1,
                                const char *s2, size_t l2) {
   if (l2 == 0) return s1;  /* empty strings are everywhere */
-  else if (l2 > l1) return NULL;  /* avoids a negative 'l1' */
+  else if (l2 > l1) return nullptr;  /* avoids a negative 'l1' */
   else {
     const char *init;  /* to search for a '*s2' inside 's1' */
     l2--;  /* 1st char will be checked by 'memchr' */
     l1 = l1-l2;  /* 's2' cannot be found after that */
-    while (l1 > 0 && (init = (const char *)memchr(s1, *s2, l1)) != NULL) {
+    while (l1 > 0 && (init = (const char *)memchr(s1, *s2, l1)) != nullptr) {
       init++;   /* 1st char is already checked */
       if (memcmp(init, s2+1, l2) == 0)
         return init-1;
@@ -691,7 +692,7 @@ static const char *lmemfind (const char *s1, size_t l1,
         s1 = init;
       }
     }
-    return NULL;  /* not found */
+    return nullptr;  /* not found */
   }
 }
 
@@ -804,11 +805,11 @@ static int str_find_aux (lua_State *L, int find) {
     do {
       const char *res;
       reprepstate(&ms);
-      if ((res=match(&ms, s1, p)) != NULL) {
+      if ((res=match(&ms, s1, p)) != nullptr) {
         if (find) {
           lua_pushinteger(L, (s1 - s) + 1);  /* start */
           lua_pushinteger(L, res - s);   /* end */
-          return push_captures(&ms, NULL, 0) + 2;
+          return push_captures(&ms, nullptr, 0) + 2;
         }
         else
           return push_captures(&ms, s1, res);
@@ -846,7 +847,7 @@ static int gmatch_aux (lua_State *L) {
   for (src = gm->src; src <= gm->ms.src_end; src++) {
     const char *e;
     reprepstate(&gm->ms);
-    if ((e = match(&gm->ms, src, gm->p)) != NULL && e != gm->lastmatch) {
+    if ((e = match(&gm->ms, src, gm->p)) != nullptr && e != gm->lastmatch) {
       gm->src = gm->lastmatch = e;
       return push_captures(&gm->ms, src, e);
     }
@@ -866,7 +867,7 @@ static int gmatch (lua_State *L) {
   if (init > ls)  /* start after string's end? */
     init = ls + 1;  /* avoid overflows in 's + init' */
   prepstate(&gm->ms, L, s, ls, p, lp);
-  gm->src = s + init; gm->p = p; gm->lastmatch = NULL;
+  gm->src = s + init; gm->p = p; gm->lastmatch = nullptr;
   lua_pushcclosure(L, gmatch_aux, 3);
   return 1;
 }
@@ -878,7 +879,7 @@ static void add_s (MatchState *ms, luaL_Buffer *b, const char *s,
   lua_State *L = ms->L;
   const char *news = lua_tolstring(L, 3, &l);
   const char *p;
-  while ((p = (char *)memchr(news, L_ESC, l)) != NULL) {
+  while ((p = (char *)memchr(news, L_ESC, l)) != nullptr) {
     luaL_addlstring(b, news, p - news);
     p++;  /* skip ESC */
     if (*p == L_ESC)  /* '%%' */
@@ -947,7 +948,7 @@ static int str_gsub (lua_State *L) {
   size_t srcl, lp;
   const char *src = luaL_checklstring(L, 1, &srcl);  /* subject */
   const char *p = luaL_checklstring(L, 2, &lp);  /* pattern */
-  const char *lastmatch = NULL;  /* end of last match */
+  const char *lastmatch = nullptr;  /* end of last match */
   int tr = lua_type(L, 3);  /* replacement type */
   lua_Integer max_s = luaL_optinteger(L, 4, srcl + 1);  /* max replacements */
   int anchor = (*p == '^');
@@ -966,7 +967,7 @@ static int str_gsub (lua_State *L) {
   while (n < max_s) {
     const char *e;
     reprepstate(&ms);  /* (re)prepare state for new match */
-    if ((e = match(&ms, src, p)) != NULL && e != lastmatch) {  /* match? */
+    if ((e = match(&ms, src, p)) != nullptr && e != lastmatch) {  /* match? */
       n++;
       changed = add_value(&ms, &b, src, e, tr) | changed;
       src = lastmatch = e;
@@ -1011,7 +1012,7 @@ static int str_gsub (lua_State *L) {
 ** to nibble boundaries by making what is left after that first digit a
 ** multiple of 4.
 */
-#define L_NBFD		((l_floatatt(MANT_DIG) - 1)%4 + 1)
+#define L_NBFD ((std::numeric_limits<lua_Number>::digits - 1)%4 + 1)
 
 
 /*
@@ -1065,8 +1066,9 @@ static int lua_number2strx (lua_State *L, char *buff, int sz,
     for (i = 0; i < n; i++)
       buff[i] = toupper(uchar(buff[i]));
   }
-  else if (l_unlikely(fmt[SIZELENMOD] != 'a'))
+  else if (fmt[SIZELENMOD] != 'a') [[unlikely]] {
     return luaL_error(L, "modifiers for format '%%a'/'%%A' not implemented");
+  }
   return n;
 }
 
@@ -1079,7 +1081,7 @@ static int lua_number2strx (lua_State *L, char *buff, int sz,
 ** and '\0') + number of decimal digits to represent maxfloat (which
 ** is maximum exponent + 1). (99+3+1, adding some extra, 110)
 */
-#define MAX_ITEMF	(110 + l_floatatt(MAX_10_EXP))
+#define MAX_ITEMF	(110 + std::numeric_limits<lua_Number>::max_exponent10)
 
 
 /*
@@ -1164,7 +1166,7 @@ static int quotefloat (lua_State *L, char *buff, lua_Number n) {
     int  nb = lua_number2strx(L, buff, MAX_ITEM,
                                  "%" LUA_NUMBER_FRMLEN "a", n);
     /* ensures that 'buff' string uses a dot as the radix character */
-    if (memchr(buff, '.', nb) == NULL) {  /* no dot? */
+    if (memchr(buff, '.', nb) == nullptr) {  /* no dot? */
       char point = lua_getlocaledecpoint();  /* try locale point */
       char *ppoint = (char *)memchr(buff, point, nb);
       if (ppoint) *ppoint = '.';  /* change it to a dot */
@@ -1200,7 +1202,7 @@ static void addliteral (lua_State *L, luaL_Buffer *b, int arg) {
       break;
     }
     case LUA_TNIL: case LUA_TBOOLEAN: {
-      luaL_tolstring(L, arg, NULL);
+      luaL_tolstring(L, arg, nullptr);
       luaL_addvalue(b);
       break;
     }
@@ -1337,7 +1339,7 @@ static int str_format (lua_State *L) {
         case 'p': {
           const void *p = lua_topointer(L, arg);
           checkformat(L, form, L_FMTFLAGSC, 0);
-          if (p == NULL) {  /* avoid calling 'printf' with argument NULL */
+          if (p == nullptr) {  /* avoid calling 'printf' with argument nullptr */
             p = "(null)";  /* result */
             form[strlen(form) - 1] = 's';  /* format it as a string */
           }
@@ -1358,7 +1360,7 @@ static int str_format (lua_State *L) {
           else {
             luaL_argcheck(L, l == strlen(s), arg, "string contains zeros");
             checkformat(L, form, L_FMTFLAGSC, 1);
-            if (strchr(form, '.') == NULL && l >= 100) {
+            if (strchr(form, '.') == nullptr && l >= 100) {
               /* no precision and string is too long to be formatted */
               luaL_addvalue(&b);  /* keep entire string */
             }
@@ -1849,7 +1851,7 @@ static const luaL_Reg strlib[] = {
   {"pack", str_pack},
   {"packsize", str_packsize},
   {"unpack", str_unpack},
-  {NULL, NULL}
+  {nullptr, nullptr}
 };
 
 

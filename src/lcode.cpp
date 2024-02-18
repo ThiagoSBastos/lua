@@ -14,6 +14,7 @@
 #include <climits>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 
 #include "lua.h"
 
@@ -606,7 +607,7 @@ static int luaK_numberK (FuncState *fs, lua_Number r) {
   if (!luaV_flttointeger(r, &ik, F2Imod::F2Ieq))  /* not an integral value? */
     return addk(fs, &o, &o);  /* use number itself as key */
   else {  /* must build an alternative key */
-    const int nbm = l_floatatt(MANT_DIG);
+    const int nbm = std::numeric_limits<lua_Number>::digits;
     const lua_Number q = l_mathop(ldexp)(l_mathop(1.0), -nbm + 1);
     const lua_Number k = (ik == 0) ? q : r + r*q;  /* new key */
     TValue kv;

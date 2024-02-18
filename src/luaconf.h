@@ -406,7 +406,6 @@ extern "C" {
 /*
 @@ LUAI_UACNUMBER is the result of a 'default argument promotion'
 @@ over a floating number.
-@@ l_floatatt(x) corrects float attribute 'x' to the proper float type
 ** by prefixing it with one of FLT/DBL/LDBL.
 @@ LUA_NUMBER_FRMLEN is the length modifier for writing floats.
 @@ LUA_NUMBER_FMT is the format for writing floats.
@@ -445,8 +444,6 @@ extern "C" {
 
 #define LUA_NUMBER	float
 
-#define l_floatatt(n)		(FLT_##n)
-
 #define LUAI_UACNUMBER	double
 
 #define LUA_NUMBER_FRMLEN	""
@@ -461,8 +458,6 @@ extern "C" {
 
 #define LUA_NUMBER	long double
 
-#define l_floatatt(n)		(LDBL_##n)
-
 #define LUAI_UACNUMBER	long double
 
 #define LUA_NUMBER_FRMLEN	"L"
@@ -475,8 +470,6 @@ extern "C" {
 #elif LUA_FLOAT_TYPE == LUA_FLOAT_DOUBLE	/* }{ double */
 
 #define LUA_NUMBER	double
-
-#define l_floatatt(n)		(DBL_##n)
 
 #define LUAI_UACNUMBER	double
 

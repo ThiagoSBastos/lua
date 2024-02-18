@@ -19,6 +19,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits>
 
 #include "lua.h"
 
@@ -62,7 +63,7 @@ extern "C" {
 */
 
 /* number of bits in the mantissa of a float */
-#define NBM		(l_floatatt(MANT_DIG))
+static constexpr int NBM = std::numeric_limits<lua_Number>::digits;
 
 /*
 ** Check whether some integers may not fit in a float, testing whether
