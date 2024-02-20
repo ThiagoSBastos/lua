@@ -7,15 +7,12 @@
 #define lmathlib_c
 #define LUA_LIB
 
-#include <climits>
 #include <cmath>
-#include <cstdlib>
 #include <ctime>
 
 #include <array>
 #include <limits>
 #include <numbers>
-
 #include "lua.h"
 
 #include "lauxlib.h"
@@ -62,7 +59,7 @@ static int math_acos (lua_State *L) {
 static int math_atan (lua_State *L) {
   lua_Number y = luaL_checknumber(L, 1);
   lua_Number x = luaL_optnumber(L, 2, 1);
-  lua_pushnumber(L, l_mathop(atan2)(y, x));
+  lua_pushnumber(L, l_mathop(std::atan2)(y, x));
   return 1;
 }
 
@@ -94,7 +91,7 @@ static int math_floor (lua_State *L) {
   if (lua_isinteger(L, 1))
     lua_settop(L, 1);  /* integer is its own floor */
   else {
-    lua_Number d = l_mathop(floor)(luaL_checknumber(L, 1));
+    lua_Number d = l_mathop(std::floor)(luaL_checknumber(L, 1));
     pushnumint(L, d);
   }
   return 1;
@@ -105,7 +102,7 @@ static int math_ceil (lua_State *L) {
   if (lua_isinteger(L, 1))
     lua_settop(L, 1);  /* integer is its own ceil */
   else {
-    lua_Number d = l_mathop(ceil)(luaL_checknumber(L, 1));
+    lua_Number d = l_mathop(std::ceil)(luaL_checknumber(L, 1));
     pushnumint(L, d);
   }
   return 1;
@@ -123,7 +120,7 @@ static int math_fmod (lua_State *L) {
       lua_pushinteger(L, lua_tointeger(L, 1) % d);
   }
   else
-    lua_pushnumber(L, l_mathop(fmod)(luaL_checknumber(L, 1),
+    lua_pushnumber(L, l_mathop(std::fmod)(luaL_checknumber(L, 1),
                                      luaL_checknumber(L, 2)));
   return 1;
 }
@@ -142,7 +139,7 @@ static int math_modf (lua_State *L) {
   else {
     lua_Number n = luaL_checknumber(L, 1);
     /* integer part (rounds toward zero) */
-    lua_Number ip = (n < 0) ? l_mathop(ceil)(n) : l_mathop(floor)(n);
+    lua_Number ip = (n < 0) ? l_mathop(std::ceil)(n) : l_mathop(std::floor)(n);
     pushnumint(L, ip);
     /* fractional part (test needed for inf/-inf) */
     lua_pushnumber(L, (n == ip) ? l_mathop(0.0) : (n - ip));
@@ -168,25 +165,25 @@ static int math_log (lua_State *L) {
   lua_Number x = luaL_checknumber(L, 1);
   lua_Number res;
   if (lua_isnoneornil(L, 2))
-    res = l_mathop(log)(x);
+    res = l_mathop(std::log)(x);
   else {
     lua_Number base = luaL_checknumber(L, 2);
 #if !defined(LUA_USE_C89)
     if (base == l_mathop(2.0))
-      res = l_mathop(log2)(x);
+      res = l_mathop(std::log2)(x);
     else
 #endif
     if (base == l_mathop(10.0))
-      res = l_mathop(log10)(x);
+      res = l_mathop(std::log10)(x);
     else
-      res = l_mathop(log)(x)/l_mathop(log)(base);
+      res = l_mathop(std::log)(x)/l_mathop(std::log)(base);
   }
   lua_pushnumber(L, res);
   return 1;
 }
 
 static int math_exp (lua_State *L) {
-  lua_pushnumber(L, l_mathop(exp)(luaL_checknumber(L, 1)));
+  lua_pushnumber(L, l_mathop(std::exp)(luaL_checknumber(L, 1)));
   return 1;
 }
 
@@ -453,7 +450,7 @@ static Rand64 rotl1 (Rand64 i, int n) {
 /*
 ** implementation of 'xoshiro256**' algorithm on 'Rand64' values
 */
-static Rand64 nextrand (Rand64 *state) {
+static constexpr Rand64 nextrand (Rand64 *state) {
   Rand64 res = times9(rotl(times5(state[1]), 7));
   Rand64 t = Ishl(state[1], 17);
   Ixor(&state[2], state[0]);
@@ -607,13 +604,13 @@ static int math_random (lua_State *L) {
 
 static void setseed (lua_State *L, Rand64 *state,
                      lua_Unsigned n1, lua_Unsigned n2) {
-  int i;
   state[0] = Int2I(n1);
   state[1] = Int2I(0xff);  /* avoid a zero state */
   state[2] = Int2I(n2);
   state[3] = Int2I(0);
-  for (i = 0; i < 16; i++)
+  for (int i = 0; i < 16; i++) {
     nextrand(state);  /* discard initial values to "spread" seed */
+  }
   lua_pushinteger(L, n1);
   lua_pushinteger(L, n2);
 }
@@ -624,17 +621,17 @@ static void setseed (lua_State *L, Rand64 *state,
 ** and the address of 'L' (in case the machine does address space layout
 ** randomization).
 */
-static void randseed (lua_State *L, RanState *state) {
-  lua_Unsigned seed1 = (lua_Unsigned)time(nullptr);
+static void randseed (lua_State *L, RanState& state) {
+  lua_Unsigned seed1 = (lua_Unsigned)std::time(nullptr);
   lua_Unsigned seed2 = (lua_Unsigned)(size_t)L;
-  setseed(L, state->s.data(), seed1, seed2);
+  setseed(L, state.s.data(), seed1, seed2);
 }
 
 
 static int math_randomseed (lua_State *L) {
   RanState *state = (RanState *)lua_touserdata(L, lua_upvalueindex(1));
   if (lua_isnone(L, 1)) {
-    randseed(L, state);
+    randseed(L, *state);
   }
   else {
     lua_Integer n1 = luaL_checkinteger(L, 1);
@@ -657,7 +654,7 @@ static constexpr luaL_Reg randfuncs[] = {
 */
 static void setrandfunc (lua_State *L) {
   RanState *state = (RanState *)lua_newuserdatauv(L, sizeof(RanState), 0);
-  randseed(L, state);  /* initialize with a "random" seed */
+  randseed(L, *state);  /* initialize with a "random" seed */
   lua_pop(L, 2);  /* remove pushed seeds */
   luaL_setfuncs(L, randfuncs, 1);
 }
@@ -696,7 +693,7 @@ static int math_pow (lua_State *L) {
 
 static int math_frexp (lua_State *L) {
   int e;
-  lua_pushnumber(L, l_mathop(frexp)(luaL_checknumber(L, 1), &e));
+  lua_pushnumber(L, l_mathop(std::frexp)(luaL_checknumber(L, 1), &e));
   lua_pushinteger(L, e);
   return 2;
 }
@@ -704,7 +701,7 @@ static int math_frexp (lua_State *L) {
 static int math_ldexp (lua_State *L) {
   lua_Number x = luaL_checknumber(L, 1);
   int ep = (int)luaL_checkinteger(L, 2);
-  lua_pushnumber(L, l_mathop(ldexp)(x, ep));
+  lua_pushnumber(L, l_mathop(std::ldexp)(x, ep));
   return 1;
 }
 
@@ -767,7 +764,7 @@ LUAMOD_API int luaopen_math (lua_State *L) {
   luaL_newlib(L, lua::math::mathlib);
   lua_pushnumber(L, std::numbers::pi);
   lua_setfield(L, -2, "pi");
-  lua_pushnumber(L, (lua_Number)HUGE_VAL);
+  lua_pushnumber(L, std::numeric_limits<lua_Number>::infinity());
   lua_setfield(L, -2, "huge");
   lua_pushinteger(L, LUA_MAXINTEGER);
   lua_setfield(L, -2, "maxinteger");

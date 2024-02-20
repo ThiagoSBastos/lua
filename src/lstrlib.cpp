@@ -11,14 +11,10 @@
 extern "C" {
 #endif
 
-#include "lprefix.h"
-
-
-#include <ctype.h>
-#include <float.h>
-#include <limits.h>
-#include <locale.h>
-#include <math.h>
+#include <cctype>
+#include <climits>
+#include <clocale>
+#include <cmath>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1028,8 +1024,9 @@ static lua_Number adddigit (char *buff, int n, lua_Number x) {
 
 static int num2straux (char *buff, int sz, lua_Number x) {
   /* if 'inf' or 'NaN', format it like '%g' */
-  if (x != x || x == (lua_Number)HUGE_VAL || x == -(lua_Number)HUGE_VAL)
+  if (x != x || x == std::numeric_limits<lua_Number>::infinity || x == -std::numeric_limits<lua_Number>::infinity()) {
     return l_sprintf(buff, sz, LUA_NUMBER_FMT, (LUAI_UACNUMBER)x);
+  }
   else if (x == 0) {  /* can be -0... */
     /* create "0" or "-0" followed by exponent */
     return l_sprintf(buff, sz, LUA_NUMBER_FMT "x0p+0", (LUAI_UACNUMBER)x);
@@ -1156,12 +1153,15 @@ static void addquoted (luaL_Buffer *b, const char *s, size_t len) {
 */
 static int quotefloat (lua_State *L, char *buff, lua_Number n) {
   const char *s;  /* for the fixed representations */
-  if (n == (lua_Number)HUGE_VAL)  /* inf? */
+  if (n == std::numeric_limits<lua_Number>::infinity()) { /* inf? */
     s = "1e9999";
-  else if (n == -(lua_Number)HUGE_VAL)  /* -inf? */
+  }
+  else if (n == -std::numeric_limits<lua_Number>::infinity()) {  /* -inf? */
     s = "-1e9999";
-  else if (n != n)  /* NaN? */
+  }
+  else if (std::isnan(n)) { /* NaN? */
     s = "(0/0)";
+  }
   else {  /* format number as hexadecimal */
     int  nb = lua_number2strx(L, buff, MAX_ITEM,
                                  "%" LUA_NUMBER_FRMLEN "a", n);
@@ -1421,17 +1421,17 @@ static const union {
 /*
 ** information to pack/unpack stuff
 */
-typedef struct Header {
+struct Header {
   lua_State *L;
   int islittle;
   int maxalign;
-} Header;
+};
 
 
 /*
 ** options for pack/unpack
 */
-typedef enum KOption {
+enum KOption {
   Kint,		/* signed integers */
   Kuint,	/* unsigned integers */
   Kfloat,	/* single-precision floating-point numbers */
@@ -1443,7 +1443,7 @@ typedef enum KOption {
   Kpadding,	/* padding */
   Kpaddalign,	/* padding for alignment */
   Knop		/* no-op (configuration or spaces) */
-} KOption;
+};
 
 
 /*
