@@ -11,15 +11,11 @@
 extern "C" {
 #endif
 
-#include "lprefix.h"
-
-
-#include <errno.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cerrno>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /*
 ** This file uses only the official API of Lua.
@@ -187,7 +183,7 @@ LUALIB_API int luaL_argerror (lua_State *L, int arg, const char *extramsg) {
       return luaL_error(L, "calling '%s' on bad self (%s)",
                            ar.name, extramsg);
   }
-  if (ar.name == NULL)
+  if (ar.name == nullptr)
     ar.name = (pushglobalfuncname(L, &ar)) ? lua_tostring(L, -1) : "?";
   return luaL_error(L, "bad argument #%d to '%s' (%s)",
                         arg, ar.name, extramsg);
@@ -288,7 +284,7 @@ LUALIB_API int luaL_fileresult (lua_State *L, int stat, const char *fname) {
 
 LUALIB_API int luaL_execresult (lua_State *L, int stat) {
   if (stat != 0 && errno != 0)  /* error with an 'errno'? */
-    return luaL_fileresult(L, 0, NULL);
+    return luaL_fileresult(L, 0, nullptr);
   else {
     const char *what = "exit";  /* type of termination */
     l_inspectstat(stat, what);  /* interpret result */
@@ -333,22 +329,22 @@ LUALIB_API void luaL_setmetatable (lua_State *L, const char *tname) {
 
 LUALIB_API void *luaL_testudata (lua_State *L, int ud, const char *tname) {
   void *p = lua_touserdata(L, ud);
-  if (p != NULL) {  /* value is a userdata? */
+  if (p != nullptr) {  /* value is a userdata? */
     if (lua_getmetatable(L, ud)) {  /* does it have a metatable? */
       luaL_getmetatable(L, tname);  /* get correct metatable */
       if (!lua_rawequal(L, -1, -2))  /* not the same? */
-        p = NULL;  /* value is a userdata with wrong metatable */
+        p = nullptr;  /* value is a userdata with wrong metatable */
       lua_pop(L, 2);  /* remove both metatables */
       return p;
     }
   }
-  return NULL;  /* value is not a userdata with a metatable */
+  return nullptr;  /* value is not a userdata with a metatable */
 }
 
 
 LUALIB_API void *luaL_checkudata (lua_State *L, int ud, const char *tname) {
   void *p = luaL_testudata(L, ud, tname);
-  luaL_argexpected(L, p != NULL, ud, tname);
+  luaL_argexpected(L, p != nullptr, ud, tname);
   return p;
 }
 
@@ -382,7 +378,7 @@ LUALIB_API int luaL_checkoption (lua_State *L, int arg, const char *def,
 ** but without 'msg'.)
 */
 LUALIB_API void luaL_checkstack (lua_State *L, int space, const char *msg) {
-  if (l_unlikely(!lua_checkstack(L, space))) {
+  if (!lua_checkstack(L, space)) [[unlikely]] {
     if (msg)
       luaL_error(L, "stack overflow (%s)", msg);
     else
@@ -392,20 +388,24 @@ LUALIB_API void luaL_checkstack (lua_State *L, int space, const char *msg) {
 
 
 LUALIB_API void luaL_checktype (lua_State *L, int arg, int t) {
-  if (l_unlikely(lua_type(L, arg) != t))
+  if (lua_type(L, arg) != t) [[unlikely]] {
     tag_error(L, arg, t);
+  }
 }
 
 
 LUALIB_API void luaL_checkany (lua_State *L, int arg) {
-  if (l_unlikely(lua_type(L, arg) == LUA_TNONE))
+  if (lua_type(L, arg) == LUA_TNONE) [[unlikely]] {
     luaL_argerror(L, arg, "value expected");
+  }
 }
 
 
 LUALIB_API const char *luaL_checklstring (lua_State *L, int arg, size_t *len) {
   const char *s = lua_tolstring(L, arg, len);
-  if (l_unlikely(!s)) tag_error(L, arg, LUA_TSTRING);
+  if (!s) [[unlikely]] {
+    tag_error(L, arg, LUA_TSTRING);
+  }
   return s;
 }
 
@@ -424,8 +424,9 @@ LUALIB_API const char *luaL_optlstring (lua_State *L, int arg,
 LUALIB_API lua_Number luaL_checknumber (lua_State *L, int arg) {
   int isnum;
   lua_Number d = lua_tonumberx(L, arg, &isnum);
-  if (l_unlikely(!isnum))
+  if (!isnum) [[unlikely]] {
     tag_error(L, arg, LUA_TNUMBER);
+  }
   return d;
 }
 
@@ -446,7 +447,7 @@ static void interror (lua_State *L, int arg) {
 LUALIB_API lua_Integer luaL_checkinteger (lua_State *L, int arg) {
   int isnum;
   lua_Integer d = lua_tointegerx(L, arg, &isnum);
-  if (l_unlikely(!isnum)) {
+  if (!isnum) [[unlikely]] {
     interror(L, arg);
   }
   return d;
@@ -479,7 +480,7 @@ static void *resizebox (lua_State *L, int idx, size_t newsize) {
   lua_Alloc allocf = lua_getallocf(L, &ud);
   UBox *box = (UBox *)lua_touserdata(L, idx);
   void *temp = allocf(ud, box->box, box->bsize, newsize);
-  if (l_unlikely(temp == NULL && newsize > 0)) {  /* allocation error? */
+  if (temp == nullptr && newsize > 0) [[unlikely]] {  /* allocation error? */
     lua_pushliteral(L, "not enough memory");
     lua_error(L);  /* raise a memory error */
   }
@@ -498,13 +499,13 @@ static int boxgc (lua_State *L) {
 static const luaL_Reg boxmt[] = {  /* box metamethods */
   {"__gc", boxgc},
   {"__close", boxgc},
-  {NULL, NULL}
+  {nullptr, nullptr}
 };
 
 
 static void newbox (lua_State *L) {
   UBox *box = (UBox *)lua_newuserdatauv(L, sizeof(UBox), 0);
-  box->box = NULL;
+  box->box = nullptr;
   box->bsize = 0;
   if (luaL_newmetatable(L, "_UBOX*"))  /* creating metatable? */
     luaL_setfuncs(L, boxmt, 0);  /* set its metamethods */
@@ -521,10 +522,10 @@ static void newbox (lua_State *L) {
 
 /*
 ** Whenever buffer is accessed, slot 'idx' must either be a box (which
-** cannot be NULL) or it is a placeholder for the buffer.
+** cannot be nullptr) or it is a placeholder for the buffer.
 */
 #define checkbufferlevel(B,idx)  \
-  lua_assert(buffonstack(B) ? lua_touserdata(B->L, idx) != NULL  \
+  lua_assert(buffonstack(B) ? lua_touserdata(B->L, idx) != nullptr  \
                             : lua_touserdata(B->L, idx) == (void*)B)
 
 
@@ -535,8 +536,9 @@ static void newbox (lua_State *L) {
 */
 static size_t newbuffsize (luaL_Buffer *B, size_t sz) {
   size_t newsize = (B->size / 2) * 3;  /* buffer size * 1.5 */
-  if (l_unlikely(MAX_SIZET - sz < B->n))  /* overflow in (B->n + sz)? */
+  if (MAX_SIZET - sz < B->n) [[unlikely]] { /* overflow in (B->n + sz)? */
     return luaL_error(B->L, "buffer too large");
+  }
   if (newsize < B->n + sz)  /* not big enough? */
     newsize = B->n + sz;
   return newsize;
@@ -582,7 +584,7 @@ LUALIB_API char *luaL_prepbuffsize (luaL_Buffer *B, size_t sz) {
 
 
 LUALIB_API void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l) {
-  if (l > 0) {  /* avoid 'memcpy' when 's' can be NULL */
+  if (l > 0) {  /* avoid 'memcpy' when 's' can be nullptr */
     char *b = prepbuffsize(B, l, -1);
     memcpy(b, s, l * sizeof(char));
     luaL_addsize(B, l);
@@ -728,7 +730,7 @@ static const char *getF (lua_State *L, void *ud, size_t *size) {
     /* 'fread' can return > 0 *and* set the EOF flag. If next call to
        'getF' called 'fread', it might still wait for user input.
        The next check avoids this problem. */
-    if (feof(lf->f)) return NULL;
+    if (feof(lf->f)) return nullptr;
     *size = fread(lf->buff, 1, sizeof(lf->buff), lf->f);  /* read block */
   }
   return lf->buff;
@@ -785,14 +787,14 @@ LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
   int status, readstatus;
   int c;
   int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
-  if (filename == NULL) {
+  if (filename == nullptr) {
     lua_pushliteral(L, "=stdin");
     lf.f = stdin;
   }
   else {
     lua_pushfstring(L, "@%s", filename);
     lf.f = fopen(filename, "r");
-    if (lf.f == NULL) return errfile(L, "open", fnameindex);
+    if (lf.f == nullptr) return errfile(L, "open", fnameindex);
   }
   lf.n = 0;
   if (skipcomment(lf.f, &c))  /* read initial portion */
@@ -801,7 +803,7 @@ LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
     lf.n = 0;  /* remove possible newline */
     if (filename) {  /* "real" file? */
       lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
-      if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
+      if (lf.f == nullptr) return errfile(L, "reopen", fnameindex);
       skipcomment(lf.f, &c);  /* re-read initial portion */
     }
   }
@@ -828,7 +830,7 @@ typedef struct LoadS {
 static const char *getS (lua_State *L, void *ud, size_t *size) {
   LoadS *ls = (LoadS *)ud;
   (void)L;  /* not used */
-  if (ls->size == 0) return NULL;
+  if (ls->size == 0) return nullptr;
   *size = ls->size;
   ls->size = 0;
   return ls->s;
@@ -883,8 +885,9 @@ LUALIB_API lua_Integer luaL_len (lua_State *L, int idx) {
   int isnum;
   lua_len(L, idx);
   l = lua_tointegerx(L, -1, &isnum);
-  if (l_unlikely(!isnum))
+  if (!isnum) [[unlikely]] {
     luaL_error(L, "object length is not an integer");
+  }
   lua_pop(L, 1);  /* remove object */
   return l;
 }
@@ -936,8 +939,8 @@ LUALIB_API const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
 */
 LUALIB_API void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup) {
   luaL_checkstack(L, nup, "too many upvalues");
-  for (; l->name != NULL; l++) {  /* fill the table with given functions */
-    if (l->func == NULL)  /* place holder? */
+  for (; l->name != nullptr; l++) {  /* fill the table with given functions */
+    if (l->func == nullptr)  /* place holder? */
       lua_pushboolean(L, 0);
     else {
       int i;
@@ -999,7 +1002,7 @@ LUALIB_API void luaL_addgsub (luaL_Buffer *b, const char *s,
                                      const char *p, const char *r) {
   const char *wild;
   size_t l = strlen(p);
-  while ((wild = strstr(s, p)) != NULL) {
+  while ((wild = strstr(s, p)) != nullptr) {
     luaL_addlstring(b, s, wild - s);  /* push prefix */
     luaL_addstring(b, r);  /* push replacement in place of pattern */
     s = wild + l;  /* continue after 'p' */
@@ -1022,7 +1025,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   (void)ud; (void)osize;  /* not used */
   if (nsize == 0) {
     free(ptr);
-    return NULL;
+    return nullptr;
   }
   else
     return realloc(ptr, nsize);
@@ -1031,7 +1034,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
 
 static int panic (lua_State *L) {
   const char *msg = lua_tostring(L, -1);
-  if (msg == NULL) msg = "error object is not a string";
+  if (msg == nullptr) msg = "error object is not a string";
   lua_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
                         msg);
   return 0;  /* return to Lua to abort */
@@ -1096,8 +1099,8 @@ static void warnfon (void *ud, const char *message, int tocont) {
 
 
 LUALIB_API lua_State *luaL_newstate (void) {
-  lua_State *L = lua_newstate(l_alloc, NULL);
-  if (l_likely(L)) {
+  lua_State *L = lua_newstate(l_alloc, nullptr);
+  if (L) [[likely]] {
     lua_atpanic(L, &panic);
     lua_setwarnf(L, warnfoff, L);  /* default is warnings off */
   }

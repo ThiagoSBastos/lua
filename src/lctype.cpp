@@ -4,24 +4,19 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "llimits.h"
 #define lctype_c
 #define LUA_CORE
-
-#include "lprefix.h"
-
 
 #include "lctype.h"
 
 #if !LUA_USE_CTYPE	/* { */
 
-#include <limits.h>
-
-
 #if defined (LUA_UCID)		/* accept UniCode IDentifiers? */
 /* consider all non-ascii codepoints to be alphabetic */
-#define NONA		0x01
+constexpr lu_byte NONA = 0x01;
 #else
-#define NONA		0x00	/* default */
+constexpr lu_byte NONA = 0x00;/* default */
 #endif
 
 
