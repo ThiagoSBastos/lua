@@ -3,7 +3,6 @@ project(luacpp LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS ON)
@@ -39,7 +38,6 @@ add_compile_options(
     -Wmissing-declarations
     -Wlogical-op
     -Wno-aggressive-loop-optimizations
-    -fuse-ld=gold
     -fno-stack-protector
     -fno-common
     -march=native
