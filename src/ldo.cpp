@@ -91,7 +91,7 @@ struct lua_longjmp {
 void luaD_seterrorobj (lua_State *L, int errcode, StkId oldtop) {
   switch (errcode) {
     case ThreadStatus::LUA_ERRMEM: {  /* memory error? */
-      setsvalue2s(L, oldtop, G(L)->memerrmsg); /* reuse preregistered msg. */
+      setsvalue2s(L, oldtop, L->getGlobalState()->memerrmsg); /* reuse preregistered msg. */
       break;
     }
     case ThreadStatus::LUA_ERRERR: {
@@ -118,7 +118,7 @@ l_noret luaD_throw (lua_State *L, int errcode) {
     LUAI_THROW(L, L->errorJmp);  /* jump to it */
   }
   else {  /* thread has no error handler */
-    global_State *g = G(L);
+    global_State *g = L->getGlobalState();
     errcode = luaE_resetthread(L, errcode);  /* close all upvalues */
     if (g->mainthread->errorJmp) {  /* main thread has a handler? */
       setobjs2s(L, g->mainthread->top.p++, L->top.p - 1);  /* copy error obj. */
@@ -213,13 +213,13 @@ int luaD_reallocstack (lua_State *L, int newsize, int raiseerror) {
   int oldsize = stacksize(L);
   int i;
   StkId newstack;
-  int oldgcstop = G(L)->gcstopem;
+  int oldgcstop = L->getGlobalState()->gcstopem;
   lua_assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
   relstack(L);  /* change pointers to offsets */
-  G(L)->gcstopem = 1;  /* stop emergency collection */
+  L->getGlobalState()->gcstopem = 1;  /* stop emergency collection */
   newstack = luaM_reallocvector(L, L->stack.p, oldsize + EXTRA_STACK,
                                    newsize + EXTRA_STACK, StackValue);
-  G(L)->gcstopem = oldgcstop;  /* restore emergency collection */
+  L->getGlobalState()->gcstopem = oldgcstop;  /* restore emergency collection */
   if (l_unlikely(newstack == nullptr)) {  /* reallocation failed? */
     correctstack(L);  /* change offsets back to pointers */
     if (raiseerror)
@@ -877,7 +877,7 @@ LUA_API int lua_yieldk (lua_State *L, int nresults, lua_KContext ctx,
   ci = L->ci;
   api_checknelems(L, nresults);
   if (l_unlikely(!yieldable(L))) {
-    if (L != G(L)->mainthread)
+    if (L != L->getGlobalState()->mainthread)
       luaG_runerror(L, "attempt to yield across a C-call boundary");
     else
       luaG_runerror(L, "attempt to yield from outside a coroutine");

@@ -321,7 +321,7 @@ static void printobj (global_State *g, GCObject *o) {
 
 
 void lua_printobj (lua_State *L, struct GCObject *o) {
-  printobj(G(L), o);
+  printobj(L->getGlobalState(), o);
 }
 
 static int testobjref (global_State *g, GCObject *f, GCObject *t) {
@@ -623,7 +623,7 @@ static lu_mem checklist (global_State *g, int maybedead, int tof,
 
 
 int lua_checkmemory (lua_State *L) {
-  global_State *g = G(L);
+  global_State *g = L->getGlobalState();
   GCObject *o;
   int maybedead;
   lu_mem totalin;  /* total of objects that are in gray lists */
@@ -895,7 +895,7 @@ static int gc_color (lua_State *L) {
     lua_pushstring(L, "no collectable");
   else {
     GCObject *obj = gcvalue(o);
-    lua_pushstring(L, isdead(G(L), obj) ? "dead" :
+    lua_pushstring(L, isdead(L->getGlobalState(), obj) ? "dead" :
                       iswhite(obj) ? "white" :
                       isblack(obj) ? "black" : "gray");
   }
@@ -927,7 +927,7 @@ static int gc_printobj (lua_State *L) {
     printf("no collectable\n");
   else {
     GCObject *obj = gcvalue(o);
-    printobj(G(L), obj);
+    printobj(L->getGlobalState(), obj);
     printf("\n");
   }
   return 0;
@@ -943,19 +943,19 @@ static int gc_state (lua_State *L) {
     GCSswptobefnz, GCSswpend, GCScallfin, GCSpause, -1};
   int option = states[luaL_checkoption(L, 1, "", statenames)];
   if (option == -1) {
-    lua_pushstring(L, statenames[G(L)->gcstate]);
+    lua_pushstring(L, statenames[L->getGlobalState()->gcstate]);
     return 1;
   }
   else {
-    global_State *g = G(L);
-    if (G(L)->gckind == KGC_GEN)
+    global_State *g = L->getGlobalState();
+    if (L->getGlobalState()->gckind == KGC_GEN)
       luaL_error(L, "cannot change states in generational mode");
     lua_lock(L);
     if (option < g->gcstate) {  /* must cross 'pause'? */
       luaC_runtilstate(L, bitmask(GCSpause));  /* run until pause */
     }
     luaC_runtilstate(L, bitmask(option));
-    lua_assert(G(L)->gcstate == option);
+    lua_assert(L->getGlobalState()->gcstate == option);
     lua_unlock(L);
     return 0;
   }
@@ -1029,7 +1029,7 @@ static int table_query (lua_State *L) {
 
 
 static int string_query (lua_State *L) {
-  stringtable *tb = &G(L)->strt;
+  stringtable *tb = &L->getGlobalState()->strt;
   int s = cast_int(luaL_optinteger(L, 1, 0)) - 1;
   if (s == -1) {
     lua_pushinteger(L ,tb->size);

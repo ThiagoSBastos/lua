@@ -108,7 +108,7 @@ typedef struct TValue {
 */
 #define checkliveness(L,obj) \
 	((void)L, lua_longassert(!iscollectable(obj) || \
-		(righttt(obj) && (L == NULL || !isdead(G(L),gcvalue(obj))))))
+		(righttt(obj) && (L == NULL || !isdead(L->getGlobalState(),gcvalue(obj))))))
 
 
 /* Macros to set values */

@@ -31,19 +31,21 @@ extern "C" {
 /*
 ** Possible states of the Garbage Collector
 */
-#define GCSpropagate	0
-#define GCSenteratomic	1
-#define GCSatomic	2
-#define GCSswpallgc	3
-#define GCSswpfinobj	4
-#define GCSswptobefnz	5
-#define GCSswpend	6
-#define GCScallfin	7
-#define GCSpause	8
+enum class GCStates {
+    GCSpropagate,
+    GCSenteratomic,
+    GCSatomic,
+    GCSswpallgc,
+    GCSswpfinobj,
+    GCSswptobefnz,
+    GCSswpend,
+    GCScallfin,
+    GCSpause
+};
 
-
-#define issweepphase(g)  \
-	(GCSswpallgc <= (g)->gcstate && (g)->gcstate <= GCSswpend)
+constexpr bool issweepphase(global_State* g) {
+	return (GCStates::GCSswpallgc <= (g)->gcstate && (g)->gcstate <= GCStates::GCSswpend);
+}
 
 
 /*
@@ -54,8 +56,7 @@ extern "C" {
 ** all objects are white again.
 */
 
-#define keepinvariant(g)	((g)->gcstate <= GCSatomic)
-
+constexpr bool keepinvariant(global_State* g) { return ((g)->gcstate <= GCStates::GCSatomic); }
 
 /*
 ** some useful bit tricks
@@ -63,7 +64,7 @@ extern "C" {
 #define resetbits(x,m)		((x) &= cast_byte(~(m)))
 #define setbits(x,m)		((x) |= (m))
 #define testbits(x,m)		((x) & (m))
-#define bitmask(b)		(1<<(b))
+#define bitmask(b)		(1<<static_cast<unsigned int>(b))
 #define bit2mask(b1,b2)		(bitmask(b1) | bitmask(b2))
 #define l_setbit(x,b)		setbits(x, bitmask(b))
 #define resetbit(x,b)		resetbits(x, bitmask(b))
@@ -168,7 +169,7 @@ extern "C" {
 ** GC cycle on every opportunity)
 */
 #define luaC_condGC(L,pre,pos) \
-	{ if (G(L)->GCdebt > 0) { pre; luaC_step(L); pos;}; \
+	{ if (L->getGlobalState()->GCdebt > 0) { pre; luaC_step(L); pos;}; \
 	  condchangemem(L,pre,pos); }
 
 /* more often than not, 'pre'/'pos' are empty */

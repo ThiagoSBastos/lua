@@ -47,8 +47,8 @@ void luaT_init (lua_State *L) {
   };
   int i;
   for (i=0; i<TM_N; i++) {
-    G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);
-    luaC_fix(L, obj2gco(G(L)->tmname[i]));  /* never collect these names */
+    L->getGlobalState()->tmname[i] = luaS_new(L, luaT_eventname[i]);
+    luaC_fix(L, obj2gco(L->getGlobalState()->tmname[i]));  /* never collect these names */
   }
 }
 
@@ -78,9 +78,9 @@ const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
       mt = uvalue(o)->metatable;
       break;
     default:
-      mt = G(L)->mt[ttype(o)];
+      mt = L->getGlobalState()->mt[ttype(o)];
   }
-  return (mt ? luaH_getshortstr(mt, G(L)->tmname[event]) : &G(L)->nilvalue);
+  return (mt ? luaH_getshortstr(mt, L->getGlobalState()->tmname[event]) : &L->getGlobalState()->nilvalue);
 }
 
 

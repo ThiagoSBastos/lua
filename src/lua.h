@@ -58,7 +58,7 @@ enum ThreadStatus {
     LUA_ERRERR
 };
 
-typedef struct lua_State lua_State;
+typedef class lua_State lua_State;
 
 
 /*

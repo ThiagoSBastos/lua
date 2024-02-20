@@ -7,11 +7,8 @@
 #define lstate_c
 #define LUA_CORE
 
-#include "lprefix.h"
-
-
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstring>
 
 #include "lua.h"
 
@@ -57,7 +54,7 @@ typedef struct LG {
 */
 #if !defined(luai_makeseed)
 
-#include <time.h>
+#include <ctime>
 
 /*
 ** Compute an initial seed with some level of randomness.
@@ -229,7 +226,7 @@ static void init_registry (lua_State *L, global_State *g) {
 ** open parts of the state that may cause memory-allocation errors.
 */
 static void f_luaopen (lua_State *L, void *ud) {
-  global_State *g = G(L);
+  global_State *g = L->getGlobalState();
   UNUSED(ud);
   stack_init(L, L);  /* init stack */
   init_registry(L, g);
@@ -247,7 +244,7 @@ static void f_luaopen (lua_State *L, void *ud) {
 ** any memory (to avoid errors)
 */
 static void preinit_thread (lua_State *L, global_State *g) {
-  G(L) = g;
+  L->setGlobalState(g);
   L->stack.p = nullptr;
   L->ci = nullptr;
   L->nci = 0;
@@ -267,7 +264,7 @@ static void preinit_thread (lua_State *L, global_State *g) {
 
 
 static void close_state (lua_State *L) {
-  global_State *g = G(L);
+  global_State *g = L->getGlobalState();
   if (!completestate(g))  /* closing a partially built state? */
     luaC_freeallobjects(L);  /* just collect its objects */
   else {  /* closing a fully built state */
@@ -276,7 +273,7 @@ static void close_state (lua_State *L) {
     luaC_freeallobjects(L);  /* collect all objects */
     luai_userstateclose(L);
   }
-  luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
+  luaM_freearray(L, L->getGlobalState()->strt.hash, L->getGlobalState()->strt.size);
   freestack(L);
   lua_assert(gettotalbytes(g) == sizeof(LG));
   (*g->frealloc)(g->ud, fromstate(L), sizeof(LG), 0);  /* free main block */
@@ -284,7 +281,7 @@ static void close_state (lua_State *L) {
 
 
 LUA_API lua_State *lua_newthread (lua_State *L) {
-  global_State *g = G(L);
+  global_State *g = L->getGlobalState();
   GCObject *o;
   lua_State *L1;
   lua_lock(L);
@@ -383,7 +380,7 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->strt.hash = nullptr;
   setnilvalue(&g->l_registry);
   g->panic = nullptr;
-  g->gcstate = GCSpause;
+  g->gcstate = GCStates::GCSpause;
   g->gckind = KGC_INC;
   g->gcstopem = 0;
   g->gcemergency = 0;
@@ -415,15 +412,15 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
 
 LUA_API void lua_close (lua_State *L) {
   lua_lock(L);
-  L = G(L)->mainthread;  /* only the main thread can be closed */
+  L = L->getGlobalState()->mainthread;  /* only the main thread can be closed */
   close_state(L);
 }
 
 
 void luaE_warning (lua_State *L, const char *msg, int tocont) {
-  lua_WarnFunction wf = G(L)->warnf;
+  lua_WarnFunction wf = L->getGlobalState()->warnf;
   if (wf != nullptr)
-    wf(G(L)->ud_warn, msg, tocont);
+    wf(L->getGlobalState()->ud_warn, msg, tocont);
 }
 
 

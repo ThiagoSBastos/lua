@@ -22,6 +22,7 @@ typedef struct CallInfo CallInfo;
 #include "ltm.h"
 #include "lzio.h"
 
+enum class GCStates;
 
 /*
 ** Some notes about garbage-collected objects: All objects in Lua must
@@ -255,7 +256,8 @@ struct CallInfo {
 /*
 ** 'global state', shared by all threads of this state
 */
-struct global_State {
+class global_State {
+public:
   lua_Alloc frealloc;  /* function to reallocate memory */
   void *ud;         /* auxiliary data to 'frealloc' */
   l_mem totalbytes;  /* number of bytes currently allocated - GCdebt */
@@ -267,7 +269,7 @@ struct global_State {
   TValue nilvalue;  /* a nil value */
   unsigned int seed;  /* randomized seed for hashes */
   lu_byte currentwhite;
-  lu_byte gcstate;  /* state of garbage collector */
+  GCStates gcstate;  /* state of garbage collector */
   lu_byte gckind;  /* kind of GC running */
   lu_byte gcstopem;  /* stops emergency collections */
   lu_byte genminormul;  /* control for minor generational collections */
@@ -295,9 +297,9 @@ struct global_State {
   GCObject *finobjsur;  /* list of survival objects with finalizers */
   GCObject *finobjold1;  /* list of old1 objects with finalizers */
   GCObject *finobjrold;  /* list of really old objects with finalizers */
-  struct lua_State *twups;  /* list of threads with open upvalues */
+  class lua_State *twups;  /* list of threads with open upvalues */
   lua_CFunction panic;  /* to be called in unprotected errors */
-  struct lua_State *mainthread;
+  class lua_State *mainthread;
   TString *memerrmsg;  /* message for memory-allocation errors */
   TString *tmname[TM_N];  /* array with tag-method names */
   struct Table *mt[LUA_NUMTYPES];  /* metatables for basic types */
@@ -310,20 +312,22 @@ struct global_State {
 /*
 ** 'per thread' state
 */
-struct lua_State {
+class lua_State {
+public:
+  global_State* getGlobalState() { return this->l_G; } // TODO: remove ability to modify global state from here
+  void setGlobalState(global_State* g) { this->l_G = g; }
   CommonHeader;
   lu_byte status;
   lu_byte allowhook;
   unsigned short nci;  /* number of items in 'ci' list */
   StkIdRel top;  /* first free slot in the stack */
-  global_State *l_G;
   CallInfo *ci;  /* call info for current function */
   StkIdRel stack_last;  /* end of stack (last element + 1) */
   StkIdRel stack;  /* stack base */
   UpVal *openupval;  /* list of open upvalues in this stack */
   StkIdRel tbclist;  /* list of to-be-closed variables */
   GCObject *gclist;
-  struct lua_State *twups;  /* list of threads with open upvalues */
+  class lua_State *twups;  /* list of threads with open upvalues */
   struct lua_longjmp *errorJmp;  /* current error recover point */
   CallInfo base_ci;  /* CallInfo for first level (C calling Lua) */
   volatile lua_Hook hook;
@@ -333,10 +337,10 @@ struct lua_State {
   int basehookcount;
   int hookcount;
   volatile l_signalT hookmask;
+private:
+  global_State *l_G;
 };
 
-
-#define G(L)	(L->l_G)
 
 /*
 ** 'g->nilvalue' being a nil value flags that the state was completely
@@ -361,7 +365,7 @@ union GCUnion {
   union Closure cl;
   struct Table h;
   struct Proto p;
-  struct lua_State th;  /* thread */
+  class lua_State th;  /* thread */
   struct UpVal upv;
 };
 

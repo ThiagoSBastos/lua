@@ -73,8 +73,8 @@ static UpVal *newupval (lua_State *L, StkId level, UpVal **prev) {
     next->u.open.previous = &uv->u.open.next;
   *prev = uv;
   if (!isintwups(L)) {  /* thread not in list of threads with upvalues? */
-    L->twups = G(L)->twups;  /* link it to the list */
-    G(L)->twups = L;
+    L->twups = L->getGlobalState()->twups;  /* link it to the list */
+    L->getGlobalState()->twups = L;
   }
   return uv;
 }
@@ -89,7 +89,7 @@ UpVal *luaF_findupval (lua_State *L, StkId level) {
   UpVal *p;
   lua_assert(isintwups(L) || L->openupval == NULL);
   while ((p = *pp) != NULL && uplevel(p) >= level) {  /* search for it */
-    lua_assert(!isdead(G(L), p));
+    lua_assert(!isdead(L->getGlobalState(), p));
     if (uplevel(p) == level)  /* corresponding upvalue? */
       return p;  /* return it */
     pp = &p->u.open.next;
@@ -144,7 +144,7 @@ static void prepcallclosemth (lua_State *L, StkId level, int status, int yy) {
   TValue *uv = s2v(level);  /* value being closed */
   TValue *errobj;
   if (status == CLOSEKTOP)
-    errobj = &G(L)->nilvalue;  /* error object is nil */
+    errobj = &L->getGlobalState()->nilvalue;  /* error object is nil */
   else {  /* 'luaD_seterrorobj' will set top to level + 2 */
     errobj = s2v(level + 1);  /* error object goes after 'uv' */
     luaD_seterrorobj(L, status, level + 1);  /* set error object */
