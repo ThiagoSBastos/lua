@@ -1006,14 +1006,13 @@ static void f_parser (lua_State *L, void *ud) {
 int luaD_protectedparser (lua_State *L, lua::zio::Zio* z, const char *name,
                                         const char *mode) {
   struct SParser p;
-  int status;
   incnny(L);  /* cannot yield during parsing */
   p.z = z; p.name = name; p.mode = mode;
   p.dyd.actvar.arr = nullptr; p.dyd.actvar.size = 0;
   p.dyd.gt.arr = nullptr; p.dyd.gt.size = 0;
   p.dyd.label.arr = nullptr; p.dyd.label.size = 0;
-  (&p)->buff.luaZ_initbuffer(L);
-  status = luaD_pcall(L, f_parser, &p, savestack(L, L->top.p), L->errfunc);
+  (&p)->buff.luaZ_initbuffer();
+  int status = luaD_pcall(L, f_parser, &p, savestack(L, L->top.p), L->errfunc);
   (&p)->buff.luaZ_freebuffer(L);
   luaM_freearray(L, p.dyd.actvar.arr, p.dyd.actvar.size);
   luaM_freearray(L, p.dyd.gt.arr, p.dyd.gt.size);

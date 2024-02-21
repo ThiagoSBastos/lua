@@ -19,6 +19,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <limits>
 
 #include "lua.h"
@@ -44,7 +45,7 @@ extern "C" {
 ** and compatible compilers.
 */
 #if !defined(LUA_USE_JUMPTABLE)
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 #define LUA_USE_JUMPTABLE	1
 #else
 #define LUA_USE_JUMPTABLE	0
@@ -72,20 +73,20 @@ static constexpr int NBM = std::numeric_limits<lua_Number>::digits;
 ** of an integer. In a worst case, NBM == 113 for long double and
 ** sizeof(long) == 32.)
 */
-#if ((((LUA_MAXINTEGER >> (NBM / 4)) >> (NBM / 4)) >> (NBM / 4)) \
-	>> (NBM - (3 * (NBM / 4))))  >  0
 
-/* limit for integers that fit in a float */
-#define MAXINTFITSF	((lua_Unsigned)1 << NBM)
+constexpr bool l_intfitsf(lua_Integer i) {
 
-/* check whether 'i' is in the interval [-MAXINTFITSF, MAXINTFITSF] */
-#define l_intfitsf(i)	((MAXINTFITSF + l_castS2U(i)) <= (2 * MAXINTFITSF))
+if constexpr (((((LUA_MAXINTEGER >> (NBM / 4)) >> (NBM / 4)) >> (NBM / 4)) >> (NBM - (3 * (NBM / 4))))  >  0) {
+  /* limit for integers that fit in a float */
+  constexpr lua_Unsigned MAXINTFITSF = ((lua_Unsigned)1 << NBM);
 
-#else  /* all integers fit in a float precisely */
-
-#define l_intfitsf(i)	1
-
-#endif
+  /* check whether 'i' is in the interval [-MAXINTFITSF, MAXINTFITSF] */
+  return ((MAXINTFITSF + l_castS2U(i)) <= (2 * MAXINTFITSF));
+}
+else {  /* all integers fit in a float precisely */
+  return true;
+}
+}
 
 
 /*
@@ -1910,6 +1911,19 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         lua_assert(0);
         vmbreak;
       }
+      vmcase (NUM_OPCODES) {
+        #if defined (_MSC_VER) && !defined(__clang__)
+        __assume(false);
+        #else
+        __builtin_unreachable();
+        #endif
+      }
+      default:
+        #if defined (_MSC_VER) && !defined(__clang__)
+        __assume(false);
+        #else
+        __builtin_unreachable();
+        #endif
     }
   }
 }

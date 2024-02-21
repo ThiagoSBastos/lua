@@ -52,7 +52,7 @@ constexpr int zgetc(lua::zio::Zio* z) {
 class Mbuffer {
 public:
   // TODO: change this to a constructor as soon as SParser becomes a class
-  constexpr void luaZ_initbuffer(lua_State* L) {
+  constexpr void luaZ_initbuffer() {
     this->buffer = nullptr;
     this->buffsize = 0;
   }
